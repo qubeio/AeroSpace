@@ -26,20 +26,25 @@ struct SwapCommand: Command {
                 }
             case .dfsRelative(let nextPrev):
                 let windows = target.workspace.rootTilingContainer.allLeafWindowsRecursive
-                guard let currentIndex = windows.firstIndex(where: { $0 == target.windowOrNil }) else {
-                    return false
+
+                switch nextPrev {
+                    case .dfsFirst:
+                        targetWindow = windows.first
+                    case .dfsLast:
+                        targetWindow = windows.last
+                    case .dfsNext, .dfsPrev:
+                        guard let currentIndex = windows.firstIndex(where: { $0 == target.windowOrNil }) else {
+                            return false
+                        }
+                        var targetIndex = nextPrev == .dfsNext ? currentIndex + 1 : currentIndex - 1
+                        if !(0 ..< windows.count).contains(targetIndex) {
+                            if !args.wrapAround {
+                                return false
+                            }
+                            targetIndex = (targetIndex + windows.count) % windows.count
+                        }
+                        targetWindow = windows[targetIndex]
                 }
-                var targetIndex = switch nextPrev {
-                    case .dfsNext: currentIndex + 1
-                    case .dfsPrev: currentIndex - 1
-                }
-                if !(0 ..< windows.count).contains(targetIndex) {
-                    if !args.wrapAround {
-                        return false
-                    }
-                    targetIndex = (targetIndex + windows.count) % windows.count
-                }
-                targetWindow = windows[targetIndex]
         }
 
         guard let targetWindow else {

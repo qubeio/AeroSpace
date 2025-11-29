@@ -39,22 +39,34 @@ struct FocusCommand: Command {
                 }
             case .dfsRelative(let nextPrev):
                 let windows = target.workspace.rootTilingContainer.allLeafWindowsRecursive
-                guard let currentIndex = windows.firstIndex(where: { $0 == target.windowOrNil }) else {
-                    return false
+
+                // Handle dfs-first and dfs-last as absolute positions
+                switch nextPrev {
+                    case .dfsFirst:
+                        guard let firstWindow = windows.first else { return false }
+                        return firstWindow.focusWindow()
+                    case .dfsLast:
+                        guard let lastWindow = windows.last else { return false }
+                        return lastWindow.focusWindow()
+                    case .dfsNext, .dfsPrev:
+                        guard let currentIndex = windows.firstIndex(where: { $0 == target.windowOrNil }) else {
+                            return false
+                        }
+                        var targetIndex = switch nextPrev {
+                            case .dfsNext: currentIndex + 1
+                            case .dfsPrev: currentIndex - 1
+                            case .dfsFirst, .dfsLast: dieT("Already handled above") as Int
+                        }
+                        if !(0 ..< windows.count).contains(targetIndex) {
+                            switch args.boundariesAction {
+                                case .stop: return true
+                                case .fail: return false
+                                case .wrapAroundTheWorkspace: targetIndex = (targetIndex + windows.count) % windows.count
+                                case .wrapAroundAllMonitors: return dieT("Must be discarded by args parser")
+                            }
+                        }
+                        return windows[targetIndex].focusWindow()
                 }
-                var targetIndex = switch nextPrev {
-                    case .dfsNext: currentIndex + 1
-                    case .dfsPrev: currentIndex - 1
-                }
-                if !(0 ..< windows.count).contains(targetIndex) {
-                    switch args.boundariesAction {
-                        case .stop: return true
-                        case .fail: return false
-                        case .wrapAroundTheWorkspace: targetIndex = (targetIndex + windows.count) % windows.count
-                        case .wrapAroundAllMonitors: return dieT("Must be discarded by args parser")
-                    }
-                }
-                return windows[targetIndex].focusWindow()
         }
     }
 }
