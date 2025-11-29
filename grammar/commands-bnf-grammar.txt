@@ -23,7 +23,7 @@ aerospace -h;
     | focus [<focus_direction_flag>]... (left|down|up|right) [<focus_direction_flag>]...
     | focus --window-id <window_id>
     | focus --dfs-index <number>
-    | focus [<focus_dfs_relative_flag>]... (dfs-next|dfs-prev) [<focus_dfs_relative_flag>]...
+    | focus [<focus_dfs_relative_flag>]... (dfs-next|dfs-prev|dfs-first|dfs-last) [<focus_dfs_relative_flag>]...
 
     | focus-back-and-forth
 
@@ -64,7 +64,7 @@ aerospace -h;
 
     | split [--window-id <window_id>] (horizontal|vertical|opposite) [--window-id <window_id>]
 
-    | swap [--swap-focus|--wrap-around|--window-id <window_id>]... (left|down|up|right|dfs-next|dfs-prev) [--swap-focus|--wrap-around|--window-id <window_id>]...
+    | swap [--swap-focus|--wrap-around|--window-id <window_id>]... (left|down|up|right|dfs-next|dfs-prev|dfs-first|dfs-last) [--swap-focus|--wrap-around|--window-id <window_id>]...
 
     | summon-workspace [--fail-if-noop] <workspace> [--fail-if-noop]
 

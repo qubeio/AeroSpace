@@ -22,3 +22,10 @@
 # XCode User settings
 xcuserdata/
 xcshareddata/
+.gitignore
+docs/BSP-SWAP-FIRST-SPEC.md
+.gitignore
+CLAUDE.md
+AGENTS.md
+PRD.md
+.claude/settings.local.json
