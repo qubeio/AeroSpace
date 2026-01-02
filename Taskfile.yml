@@ -1,0 +1,161 @@
+version: '3'
+
+vars:
+  APP_NAME: AeroSpace
+  CLI_NAME: aerospace
+  INSTALL_PATH: /Applications/{{.APP_NAME}}.app
+  CLI_INSTALL_PATH: /usr/local/bin/{{.CLI_NAME}}
+
+tasks:
+  build:
+    desc: Build debug version (fast, for development)
+    cmds:
+      - ./build-debug.sh
+
+  build:release:
+    desc: Build release version (optimized)
+    cmds:
+      - ./build-release.sh
+
+  install:
+    desc: Install debug build locally
+    deps: [build]
+    cmds:
+      - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
+        ignore_error: true
+      - sleep 1
+      - rm -rf "{{.INSTALL_PATH}}"
+      - echo "Installing app bundle to {{.INSTALL_PATH}}"
+      - xcodebuild -scheme {{.APP_NAME}} -configuration Debug -derivedDataPath .xcode-build install DSTROOT=. INSTALL_PATH=/Applications
+      - cp .xcode-build/Build/Products/Debug/{{.APP_NAME}}.app/Contents/MacOS/{{.APP_NAME}} "{{.INSTALL_PATH}}/Contents/MacOS/"
+      - echo "Installing CLI to {{.CLI_INSTALL_PATH}}"
+      - sudo cp .debug/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
+      - echo "✅ Installed {{.APP_NAME}} and {{.CLI_NAME}}"
+    
+  install:simple:
+    desc: Quick install - copy debug build to Applications
+    deps: [build]
+    cmds:
+      - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
+        ignore_error: true
+      - sleep 1
+      - rm -rf "{{.INSTALL_PATH}}"
+      - echo "Building and copying app to {{.INSTALL_PATH}}"
+      - xcodebuild -scheme {{.APP_NAME}} -configuration Debug -derivedDataPath .xcode-build build CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      - cp -r .xcode-build/Build/Products/Debug/{{.APP_NAME}}-Debug.app "{{.INSTALL_PATH}}"
+      - echo "Ad-hoc signing app bundle"
+      - codesign --force --deep --sign - "{{.INSTALL_PATH}}"
+      - echo "Installing CLI to {{.CLI_INSTALL_PATH}}"
+      - sudo cp .debug/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
+      - sudo codesign --force --sign - "{{.CLI_INSTALL_PATH}}"
+      - echo "✅ Installed {{.APP_NAME}} and {{.CLI_NAME}}"
+
+  install:release:
+    desc: Install release build locally
+    deps: [build:release]
+    cmds:
+      - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
+        ignore_error: true
+      - sleep 1
+      - rm -rf "{{.INSTALL_PATH}}"
+      - echo "Installing release app to {{.INSTALL_PATH}}"
+      - cp -r .release/{{.APP_NAME}}.app "{{.INSTALL_PATH}}"
+      - echo "Installing release CLI to {{.CLI_INSTALL_PATH}}"
+      - sudo cp .release/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
+      - echo "✅ Installed release version"
+
+  uninstall:
+    desc: Uninstall locally installed version
+    cmds:
+      - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
+        ignore_error: true
+      - rm -rf "{{.INSTALL_PATH}}"
+      - sudo rm -f "{{.CLI_INSTALL_PATH}}"
+      - echo "✅ Uninstalled {{.APP_NAME}}"
+
+  run:
+    desc: Build and run debug version
+    deps: [build]
+    cmds:
+      - ./run-debug.sh
+
+  test:
+    desc: Run all tests
+    cmds:
+      - ./run-tests.sh
+
+  test:watch:
+    desc: Run tests on file changes
+    cmds:
+      - fswatch -o Sources/ | xargs -n1 -I{} task test
+
+  format:
+    desc: Format code with swiftformat and swiftlint
+    cmds:
+      - ./format.sh
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf .build .debug .release .xcode-build
+
+  sync:
+    desc: Fetch latest changes from upstream
+    cmds:
+      - git fetch upstream
+      - echo "✅ Fetched from upstream"
+      - echo "To view changes:"
+      - echo "  git log HEAD..upstream/main --oneline"
+      - echo "To merge:"
+      - echo "  task merge"
+
+  merge:
+    desc: Merge upstream changes into current branch
+    cmds:
+      - git fetch upstream
+      - git merge upstream/main
+      - echo "✅ Merged upstream/main"
+      - echo "Run 'task test' and 'task build' to verify"
+
+  sync:install:
+    desc: Sync from upstream, merge, test, and install
+    cmds:
+      - task sync
+      - task merge
+      - task test
+      - task install:simple
+      - echo "✅ Synced, merged, tested, and installed"
+
+  update:
+    desc: Pull fork changes and rebuild/reinstall
+    cmds:
+      - git pull origin main
+      - task test
+      - task install:simple
+
+  status:
+    desc: Show divergence from upstream
+    cmds:
+      - echo "=== Upstream status ==="
+      - git fetch upstream --quiet
+      - echo "Commits ahead of upstream:"
+      - git log upstream/main..HEAD --oneline --no-decorate
+      - echo ""
+      - echo "Commits behind upstream:"
+      - git log HEAD..upstream/main --oneline --no-decorate
+
+  dev:
+    desc: Full development cycle - format, test, build, install
+    cmds:
+      - task format
+      - task test
+      - task install:simple
+      - echo "✅ Ready for development"
+
+  check:
+    desc: Pre-commit checks (format, test, build)
+    cmds:
+      - task format
+      - task test
+      - task build
+      - echo "✅ All checks passed"
