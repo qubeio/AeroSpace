@@ -122,6 +122,7 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     modeConfigRootKey: Parser(\.modes, skipParsing(Config().modes)), // Parsed manually
 
     "gaps": Parser(\.gaps, parseGaps),
+    "bsp": Parser(\.bsp, parseBSPConfig),
     "workspace-to-monitor-force-assignment": Parser(\.workspaceToMonitorForceAssignment, parseWorkspaceToMonitorAssignment),
     "on-window-detected": Parser(\.onWindowDetected, parseOnWindowDetectedArray),
 
@@ -265,6 +266,32 @@ func tomlAnyToParsedConfigRecursive(any: Any, _ backtrace: ConfigBacktrace) -> P
         }
     }
     return (config, errors)
+}
+
+private let bspConfigParser: [String: any ParserProtocol<BSPConfig>] = [
+    "split-ratio": Parser(\.splitRatio, parseDouble),
+    "auto-split-threshold": Parser(\.autoSplitThreshold, parseDouble),
+    "preferred-split-direction": Parser(\.preferredSplitDirection, parseOptionalOrientation),
+]
+
+private func parseBSPConfig(_ raw: Json, _ backtrace: ConfigBacktrace, _ errors: inout [ConfigParseError]) -> BSPConfig {
+    parseTable(raw, BSPConfig(), bspConfigParser, backtrace, &errors)
+}
+
+private func parseDouble(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Double> {
+    raw.asDoubleOrNil.orFailure(expectedActualTypeError(expected: [.float, .int], actual: raw.tomlType, backtrace))
+}
+
+private func parseOptionalOrientation(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Orientation?> {
+    guard let str = raw.asStringOrNil else {
+        return .success(nil)
+    }
+    switch str.lowercased() {
+        case "horizontal", "h": return .success(.h)
+        case "vertical", "v": return .success(.v)
+        case "auto", "": return .success(nil)
+        default: return .failure(.semantic(backtrace, "Invalid orientation '\(str)'. Expected 'horizontal', 'vertical', or 'auto'"))
+    }
 }
 
 func parseIndentForNestedContainersWithTheSameOrientation(_ _: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Void> {

@@ -56,10 +56,17 @@ struct Config: ConvenienceCopyable {
     var onFocusedMonitorChanged: [any Command] = []
 
     var gaps: Gaps = .zero
+    var bsp: BSPConfig = BSPConfig()
     var workspaceToMonitorForceAssignment: [String: [MonitorDescription]] = [:]
     var modes: [String: Mode] = [:]
     var onWindowDetected: [WindowDetectedCallback] = []
     var onModeChanged: [any Command] = []
+}
+
+struct BSPConfig: ConvenienceCopyable {
+    var splitRatio: Double = 0.5
+    var autoSplitThreshold: Double = 1.2
+    var preferredSplitDirection: Orientation? = nil
 }
 
 enum DefaultContainerOrientation: String {

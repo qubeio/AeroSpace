@@ -1,6 +1,6 @@
 # 002: BSP Layout — Config & TOML Parsing
 
-**Status:** Backlog
+**Status:** Done
 **Created:** 2026-03-29
 
 ## Objective
@@ -8,14 +8,14 @@
 Add a `[bsp]` config section to AeroSpace's TOML config, giving users control over BSP split behaviour. Must follow existing config patterns exactly.
 
 ## Acceptance Criteria
-- [ ] `BSPConfig` struct added to `Sources/AppBundle/config/Config.swift`
-- [ ] `Config` has a `var bsp: BSPConfig` field
-- [ ] `parseConfig.swift` registers a `"bsp"` parser using `bspConfigParser`
-- [ ] `split-ratio` (Double, default 0.5) parses correctly
-- [ ] `auto-split-threshold` (Double, default 1.2) parses correctly — aspect ratio above this = vertical split
-- [ ] `preferred-split-direction` (optional `"horizontal"` | `"vertical"`, default nil) parses correctly
-- [ ] Invalid values produce config parse errors (not crashes)
-- [ ] Build passes
+- [x] `BSPConfig` struct added to `Sources/AppBundle/config/Config.swift`
+- [x] `Config` has a `var bsp: BSPConfig` field
+- [x] `parseConfig.swift` registers a `"bsp"` parser using `bspConfigParser`
+- [x] `split-ratio` (Double, default 0.5) parses correctly
+- [x] `auto-split-threshold` (Double, default 1.2) parses correctly — aspect ratio above this = vertical split
+- [x] `preferred-split-direction` (optional `"horizontal"` | `"vertical"`, default nil) parses correctly
+- [x] Invalid values produce config parse errors (not crashes)
+- [x] Build passes
 
 ## Technical Notes
 
@@ -45,3 +45,4 @@ Add `bspConfigParser` and `parseBSPConfig` private functions. Reuse `parseDouble
 
 ## Log
 - 2026-03-29: Task created.
+- 2026-03-29: Implemented. Added `Double` support to `Json` enum (new `.double(Double)` case + `asDoubleOrNil`, `TomlType.float`). Added `BSPConfig` struct and `var bsp: BSPConfig` to `Config`. Added `bspConfigParser`, `parseBSPConfig`, `parseDouble`, `parseOptionalOrientation` to `parseConfig.swift`. Updated `ConfigTest` to reflect Double now parses in `Json` layer. Build passes, all tests green.
