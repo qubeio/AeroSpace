@@ -46,6 +46,8 @@ extension TreeNode {
                         try await container.layoutTiles(point, width: width, height: height, virtual: virtual, context)
                     case .accordion:
                         try await container.layoutAccordion(point, width: width, height: height, virtual: virtual, context)
+                    case .bsp:
+                        try await container.layoutBSP(point, width: width, height: height, virtual: virtual, context)
                 }
             case .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer,
                  .macosPopupWindowsContainer, .macosHiddenAppsWindowsContainer:
@@ -135,6 +137,60 @@ extension TilingContainer {
             )
             virtualPoint = orientation == .h ? virtualPoint.addingXOffset(child.hWeight) : virtualPoint.addingYOffset(child.vWeight)
             point = orientation == .h ? point.addingXOffset(child.hWeight) : point.addingYOffset(child.vWeight)
+        }
+    }
+
+    @MainActor
+    fileprivate func layoutBSP(_ point: CGPoint, width: CGFloat, height: CGFloat, virtual: Rect, _ context: LayoutContext) async throws {
+        guard !children.isEmpty else { return }
+        if children.count == 1 {
+            try await children[0].layoutRecursive(point, width: width, height: height, virtual: virtual, context)
+            return
+        }
+
+        let totalWeight = children.sumOfDouble { $0.getWeight(orientation) }
+        guard totalWeight > 0 else { return }
+
+        var currentPoint = point
+        var currentVirtualPoint = virtual.topLeftCorner
+        let gap = context.resolvedGaps.inner.get(orientation).toDouble()
+
+        for (index, child) in children.enumerated() {
+            let proportion = child.getWeight(orientation) / totalWeight
+            let isLast = index == children.count - 1
+
+            let (childWidth, childHeight): (CGFloat, CGFloat)
+            let (childVirtualWidth, childVirtualHeight): (CGFloat, CGFloat)
+            switch orientation {
+                case .h:
+                    childWidth = width * proportion
+                    childHeight = height
+                    childVirtualWidth = virtual.width * proportion
+                    childVirtualHeight = virtual.height
+                case .v:
+                    childWidth = width
+                    childHeight = height * proportion
+                    childVirtualWidth = virtual.width
+                    childVirtualHeight = virtual.height * proportion
+            }
+
+            let gapAdjustment = isLast ? 0 : gap / 2
+            try await child.layoutRecursive(
+                currentPoint,
+                width: orientation == .h ? max(0, childWidth - gapAdjustment) : childWidth,
+                height: orientation == .v ? max(0, childHeight - gapAdjustment) : childHeight,
+                virtual: Rect(topLeftX: currentVirtualPoint.x, topLeftY: currentVirtualPoint.y, width: childVirtualWidth, height: childVirtualHeight),
+                context,
+            )
+
+            switch orientation {
+                case .h:
+                    currentPoint.x += childWidth
+                    currentVirtualPoint.x += childVirtualWidth
+                case .v:
+                    currentPoint.y += childHeight
+                    currentVirtualPoint.y += childVirtualHeight
+            }
         }
     }
 
