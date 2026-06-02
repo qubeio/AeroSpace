@@ -51,8 +51,7 @@ tasks:
       - echo "✅ Installed {{.APP_NAME}} and {{.CLI_NAME}}"
 
   install:release:
-    desc: Install release build locally
-    deps: [build:release]
+    desc: Install existing release build from .release/
     cmds:
       - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
         ignore_error: true
@@ -63,6 +62,12 @@ tasks:
       - echo "Installing release CLI to {{.CLI_INSTALL_PATH}}"
       - sudo cp .release/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
       - echo "✅ Installed release version"
+
+  install:release:build:
+    desc: Build and install release version
+    deps: [build:release]
+    cmds:
+      - task: install:release
 
   uninstall:
     desc: Uninstall locally installed version
