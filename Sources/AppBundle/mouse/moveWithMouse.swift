@@ -4,7 +4,7 @@ import Common
 @MainActor
 private var moveWithMouseTask: Task<(), any Error>? = nil
 
-func movedObs(_ obs: AXObserver, ax: AXUIElement, notif: CFString, data: UnsafeMutableRawPointer?) {
+func movedObs(_: AXObserver, ax: AXUIElement, notif: CFString, _: UnsafeMutableRawPointer?) {
     let windowId = ax.containingWindowId()
     let notif = notif as String
     Task { @MainActor in
@@ -98,7 +98,7 @@ extension CGPoint {
     func findIn(tree: TilingContainer, virtual: Bool) -> Window? {
         let point = self
         let target: TreeNode? = switch tree.layout {
-            case .tiles:
+            case .tiles, .bsp:
                 tree.children.first(where: {
                     (virtual ? $0.lastAppliedLayoutVirtualRect : $0.lastAppliedLayoutPhysicalRect)?.contains(point) == true
                 })

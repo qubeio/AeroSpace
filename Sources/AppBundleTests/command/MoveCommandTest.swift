@@ -299,6 +299,10 @@ extension TreeNode {
                         container.orientation == .h
                             ? .h_accordion(container.children.map(\.layoutDescription))
                             : .v_accordion(container.children.map(\.layoutDescription))
+                    case .bsp:
+                        container.orientation == .h
+                            ? .h_tiles(container.children.map(\.layoutDescription))
+                            : .v_tiles(container.children.map(\.layoutDescription))
                 }
         }
     }

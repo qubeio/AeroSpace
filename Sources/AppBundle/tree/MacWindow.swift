@@ -60,11 +60,6 @@ final class MacWindow: Window {
         try await macApp.isDialogHeuristic(windowId, windowLevel)
     }
 
-    @MainActor
-    func getAxUiElementWindowType(_ windowLevel: MacOsWindowLevel?) async throws -> AxUiElementWindowType {
-        try await macApp.getAxUiElementWindowType(windowId, windowLevel)
-    }
-
     func dumpAxInfo() async throws -> [String: Json] {
         try await macApp.dumpWindowAxInfo(windowId: windowId)
     }
@@ -125,15 +120,17 @@ final class MacWindow: Window {
     @MainActor
     func hideInCorner(_ corner: OptimalHideCorner) async throws {
         guard let nodeMonitor else { return }
-        // Don't accidentally override prevUnhiddenEmulationPosition in case of subsequent
-        // `hideEmulation` calls
+        // Don't accidentally override prevUnhiddenEmulationPosition in case of subsequent `hideInCorner` calls
         if !isHiddenInCorner {
             guard let windowRect = try await getAxRect() else { return }
-            let topLeftCorner = windowRect.topLeftCorner
-            let monitorRect = windowRect.center.monitorApproximation.rect // Similar to layoutFloatingWindow. Non idempotent
-            let absolutePoint = topLeftCorner - monitorRect.topLeftCorner
-            prevUnhiddenProportionalPositionInsideWorkspaceRect =
-                CGPoint(x: absolutePoint.x / monitorRect.width, y: absolutePoint.y / monitorRect.height)
+            // Check for isHiddenInCorner for the second time because of the suspension point above
+            if !isHiddenInCorner {
+                let topLeftCorner = windowRect.topLeftCorner
+                let monitorRect = windowRect.center.monitorApproximation.rect // Similar to layoutFloatingWindow. Non idempotent
+                let absolutePoint = topLeftCorner - monitorRect.topLeftCorner
+                prevUnhiddenProportionalPositionInsideWorkspaceRect =
+                    CGPoint(x: absolutePoint.x / monitorRect.width, y: absolutePoint.y / monitorRect.height)
+            }
         }
         let p: CGPoint
         switch corner {
@@ -163,11 +160,16 @@ final class MacWindow: Window {
             // Tiling windows should be unhidden with layoutRecursive anyway
             case .floatingWindow:
                 let workspaceRect = nodeWorkspace.workspaceMonitor.rect
-                let pointInsideWorkspace = CGPoint(
-                    x: workspaceRect.width * prevUnhiddenProportionalPositionInsideWorkspaceRect.x,
-                    y: workspaceRect.height * prevUnhiddenProportionalPositionInsideWorkspaceRect.y,
-                )
-                setAxFrame(workspaceRect.topLeftCorner + pointInsideWorkspace, nil)
+                var newX = workspaceRect.topLeftX + workspaceRect.width * prevUnhiddenProportionalPositionInsideWorkspaceRect.x
+                var newY = workspaceRect.topLeftY + workspaceRect.height * prevUnhiddenProportionalPositionInsideWorkspaceRect.y
+                // todo we probably should replace lastFloatingSize with proper floating window sizing
+                // https://github.com/nikitabobko/AeroSpace/issues/1519
+                let windowWidth = lastFloatingSize?.width ?? 0
+                let windowHeight = lastFloatingSize?.height ?? 0
+                newX = newX.coerce(in: workspaceRect.minX ... max(workspaceRect.minX, workspaceRect.maxX - windowWidth))
+                newY = newY.coerce(in: workspaceRect.minY ... max(workspaceRect.minY, workspaceRect.maxY - windowHeight))
+
+                setAxFrame(CGPoint(x: newX, y: newY), nil)
             case .macosNativeFullscreenWindow, .macosNativeHiddenAppWindow, .macosNativeMinimizedWindow,
                  .macosPopupWindow, .tiling, .rootTilingContainer, .shimContainerRelation: break
         }
@@ -187,12 +189,8 @@ final class MacWindow: Window {
         macApp.setAxFrame(windowId, topLeft, size)
     }
 
-    override func setAxFrameBlocking(_ topLeft: CGPoint?, _ size: CGSize?) async throws {
+    func setAxFrameBlocking(_ topLeft: CGPoint?, _ size: CGSize?) async throws {
         try await macApp.setAxFrameBlocking(windowId, topLeft, size)
-    }
-
-    override func getAxTopLeftCorner() async throws -> CGPoint? {
-        try await macApp.getAxTopLeftCorner(windowId)
     }
 
     override func getAxRect() async throws -> Rect? {
@@ -226,6 +224,24 @@ private func unbindAndGetBindingDataForNewWindow(_ windowId: UInt32, _ macApp: M
 private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, window: Window?) -> BindingData {
     window?.unbindFromParent() // It's important to unbind to get correct data from below
     let mruWindow = workspace.mostRecentWindowRecursive
+    let rootContainer = workspace.rootTilingContainer
+
+    // BSP insertion: split the MRU window's slot in the tree
+    if rootContainer.layout == .bsp, let mruWindow, let mruParent = mruWindow.parent as? TilingContainer {
+        let splitOrientation = bspSplitOrientation(mruWindow: mruWindow, parentOrientation: mruParent.orientation)
+        let mruData = mruWindow.unbindFromParent()
+        let newContainer = TilingContainer(
+            parent: mruParent,
+            adaptiveWeight: mruData.adaptiveWeight,
+            splitOrientation,
+            .bsp,
+            index: mruData.index,
+        )
+        mruWindow.bind(to: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 0)
+        return BindingData(parent: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 1)
+    }
+
+    // Non-BSP: original behaviour — insert after MRU in its parent container
     if let mruWindow, let tilingParent = mruWindow.parent as? TilingContainer {
         return BindingData(
             parent: tilingParent,
@@ -234,11 +250,30 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
         )
     } else {
         return BindingData(
-            parent: workspace.rootTilingContainer,
+            parent: rootContainer,
             adaptiveWeight: WEIGHT_AUTO,
             index: INDEX_BIND_LAST,
         )
     }
+}
+
+/// Determine the orientation for a BSP split at the MRU window's position.
+/// Priority: preferredSplitDirection → aspect-ratio vs autoSplitThreshold → alternate from parent.
+@MainActor
+private func bspSplitOrientation(mruWindow: Window, parentOrientation: Orientation) -> Orientation {
+    let bsp = config.bsp
+    if let preferred = bsp.preferredSplitDirection {
+        return preferred
+    }
+    if let rect = mruWindow.lastAppliedLayoutVirtualRect, rect.height > 0 {
+        let ratio = rect.width / rect.height
+        if ratio > bsp.autoSplitThreshold {
+            return .h // wide slot → split side-by-side
+        } else if (1.0 / ratio) > bsp.autoSplitThreshold {
+            return .v // tall slot → split top-to-bottom
+        }
+    }
+    return parentOrientation.opposite // fallback: alternate orientation
 }
 
 @MainActor
@@ -255,6 +290,12 @@ func tryOnWindowDetected(_ window: Window) async throws {
 
 @MainActor
 private func onWindowDetected(_ window: Window) async throws {
+    broadcastEvent(.windowDetected(
+        windowId: window.windowId,
+        workspace: window.nodeWorkspace?.name,
+        appBundleId: window.app.rawAppBundleId,
+        appName: window.app.name,
+    ))
     for callback in config.onWindowDetected where try await callback.matches(window) {
         _ = try await callback.run.runCmdSeq(.defaultEnv.copy(\.windowId, window.windowId), .emptyStdin)
         if !callback.checkFurtherCallbacks {

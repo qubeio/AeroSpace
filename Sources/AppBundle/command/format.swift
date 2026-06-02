@@ -132,7 +132,7 @@ extension String {
                 }
             case (.monitor(let m), .monitor(let f)):
                 return switch f {
-                    case .monitorId: .success(m.monitorId.map { .int($0 + 1) } ?? .string("NULL-MONITOR-ID"))
+                    case .monitorId_oneBased: .success(m.monitorId_oneBased.map { .int($0) } ?? .string("NULL-MONITOR-ID"))
                     case .monitorAppKitNsScreenScreensId: .success(.int(m.monitorAppKitNsScreenScreensId))
                     case .monitorName: .success(.string(m.name))
                     case .monitorIsMain: .success(.bool(m.isMain))
@@ -167,6 +167,7 @@ private func toLayoutString(tc: TilingContainer) -> String {
         case (.tiles, .v): return LayoutCmdArgs.LayoutDescription.v_tiles.rawValue
         case (.accordion, .h): return LayoutCmdArgs.LayoutDescription.h_accordion.rawValue
         case (.accordion, .v): return LayoutCmdArgs.LayoutDescription.v_accordion.rawValue
+        case (.bsp, _):        return LayoutCmdArgs.LayoutDescription.bsp.rawValue
     }
 }
 
