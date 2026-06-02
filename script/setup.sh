@@ -37,6 +37,9 @@ if /bin/test -z "${NUKE_PATH:-}"; then
     export NUKE_PATH=1
 fi
 
+export AEROSPACE_CODE_SIGN_IDENTITY="${AEROSPACE_CODE_SIGN_IDENTITY:-Developer ID Application: ANDREAS FRANGOPOULQS (KHDG39GW8U)}"
+export AEROSPACE_DEVELOPMENT_TEAM="${AEROSPACE_DEVELOPMENT_TEAM:-KHDG39GW8U}"
+
 swift() {
     if /usr/bin/which swiftly &> /dev/null; then
         swiftly run swift "$@"

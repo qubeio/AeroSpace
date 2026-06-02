@@ -3,7 +3,7 @@ cd "$(dirname "$0")"
 source ./script/setup.sh
 
 build_version="0.0.0-SNAPSHOT"
-codesign_identity="aerospace-codesign-certificate"
+codesign_identity="$AEROSPACE_CODE_SIGN_IDENTITY"
 while test $# -gt 0; do
     case $1 in
         --build-version) build_version="$2"; shift 2;;

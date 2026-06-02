@@ -34,13 +34,15 @@ targets:
         # Agent apps do not appear in the Dock or in the Force Quit window
         INFOPLIST_KEY_LSUIElement: YES
         CODE_SIGN_IDENTITY: ${XCODEGEN_AEROSPACE_CODE_SIGN_IDENTITY}
+        DEVELOPMENT_TEAM: ${XCODEGEN_AEROSPACE_DEVELOPMENT_TEAM}
+        CODE_SIGN_STYLE: Manual
       configs:
         Debug:
           PRODUCT_NAME: AeroSpace-Debug
-          PRODUCT_BUNDLE_IDENTIFIER: bobko.aerospace.debug
+          PRODUCT_BUNDLE_IDENTIFIER: com.qubeio.aerospace.debug
         Release:
           PRODUCT_NAME: AeroSpace
-          PRODUCT_BUNDLE_IDENTIFIER: bobko.aerospace
+          PRODUCT_BUNDLE_IDENTIFIER: com.qubeio.aerospace
           SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
           GCC_TREAT_WARNINGS_AS_ERRORS: YES
     entitlements:

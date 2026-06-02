@@ -2,7 +2,8 @@
 cd "$(dirname "$0")"
 source ./script/setup.sh
 
-export XCODEGEN_AEROSPACE_CODE_SIGN_IDENTITY="aerospace-codesign-certificate"
+export XCODEGEN_AEROSPACE_CODE_SIGN_IDENTITY="$AEROSPACE_CODE_SIGN_IDENTITY"
+export XCODEGEN_AEROSPACE_DEVELOPMENT_TEAM="$AEROSPACE_DEVELOPMENT_TEAM"
 build_version="0.0.0-SNAPSHOT"
 generate_xcodeproj=1
 generate_cmd_help=1
