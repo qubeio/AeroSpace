@@ -1,6 +1,8 @@
-# AeroSpace BSP work
+# AeroSpace design notes
 
-Tracked in Linear: **[AeroSpace (BSP layout)](https://linear.app/qubeio/project/aerospace-bsp-layout-6a9a0655e443)**
+Implementation tasks are tracked in Linear: **[AeroSpace](https://linear.app/qubeio/project/aerospace)**
+
+This directory holds historical design documents and reference material only — not the task index.
 
 ## Start here
 
