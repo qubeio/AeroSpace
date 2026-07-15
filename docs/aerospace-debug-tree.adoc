@@ -1,0 +1,40 @@
+= aerospace-debug-tree(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-debug-tree
+// tag::purpose[]
+:manpurpose: Print the workspace tree and its layout diagnostics
+// end::purpose[]
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace debug-tree [-h|--help] [--workspace <workspace>] [--json]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+Prints the focused workspace by default. The output includes every tree node's raw adaptive weight,
+cached virtual rectangle, freshly computed virtual rectangle, and MRU/focus markers. Window titles
+are sanitized and truncated to 40 characters.
+
+This command is intended for diagnosing layout and tree-structure problems. It does not modify the tree.
+
+// =========================================================== Options
+include::util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--workspace <workspace>:: Print the named workspace instead of the focused workspace.
+
+--json:: Print machine-readable JSON with nested `children` arrays.
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]
