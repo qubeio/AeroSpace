@@ -226,18 +226,21 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
     let mruWindow = workspace.mostRecentWindowRecursive
     let rootContainer = workspace.rootTilingContainer
 
-    // BSP insertion: split the MRU window's slot in the tree
-    if rootContainer.layout == .bsp, let mruWindow, let mruParent = mruWindow.parent as? TilingContainer {
-        let splitOrientation = bspSplitOrientation(mruWindow: mruWindow, workspace: workspace)
-        let mruData = mruWindow.unbindFromParent()
+    // BSP insertion: split the anchor window's slot in the tree.
+    // The anchor is the MRU window if it's tiled; otherwise (MRU is floating, fullscreen, etc.)
+    // fall back to the most recent *tiled* window so the split still lands in the tree.
+    let anchor = (mruWindow?.parent is TilingContainer) ? mruWindow : rootContainer.mostRecentWindowRecursive
+    if rootContainer.layout == .bsp, let anchor, let anchorParent = anchor.parent as? TilingContainer {
+        let splitOrientation = bspSplitOrientation(mruWindow: anchor, workspace: workspace)
+        let anchorData = anchor.unbindFromParent()
         let newContainer = TilingContainer(
-            parent: mruParent,
-            adaptiveWeight: mruData.adaptiveWeight,
+            parent: anchorParent,
+            adaptiveWeight: anchorData.adaptiveWeight,
             splitOrientation,
             .bsp,
-            index: mruData.index,
+            index: anchorData.index,
         )
-        mruWindow.bind(to: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 0)
+        anchor.bind(to: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 0)
         return BindingData(parent: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 1)
     }
 
