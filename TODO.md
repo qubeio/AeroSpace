@@ -12,5 +12,6 @@
 - [ ] `006` BSP layout — docs & config example → [QUB-16](https://linear.app/qubeio/issue/QUB-16/bsp-layout-docs-and-config-example)
 
 ## Done
+- [x] `008` BSP — flatten single-child BSP containers → [QUB-62](https://linear.app/qubeio/issue/QUB-62/bsp-flatten-single-child-bsp-containers-in-normalizecontainers)
 - [x] `002` BSP layout — config & TOML parsing → [details](tasks/002-bsp-config.md)
 - [x] `001` BSP layout — core implementation → [details](tasks/001-bsp-core.md)
