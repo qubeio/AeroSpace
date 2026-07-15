@@ -24,15 +24,15 @@ done
 ./generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
 
 
-# Build CLI to a separate directory (.build-cli) so it does not touch the shared .build/
-# directory that xcodebuild uses for SPM package builds. Without this isolation, swift build
-# -Xswiftc -warnings-as-errors writes a package build plan into .build/out that includes
-# -warnings-as-errors for ALL targets; xcodebuild then picks this up and also adds
-# -suppress-warnings for third-party packages — a combination that became a hard error in
-# Swift 6.2 / Xcode 26 beta.
+
+# Swift 6.2 / Xcode 26 beta: -Xswiftc -warnings-as-errors is omitted here. When building a
+# universal binary (--arch arm64 --arch x86_64), swift build uses the Xcode-compatible SPM
+# backend, which automatically adds -suppress-warnings to third-party package builds. Swift 6.2
+# made -warnings-as-errors and -suppress-warnings mutually exclusive (hard error). Since
+# -Xswiftc applies to ALL compilation units (including packages), it cannot be used with the
+# Xcode backend. Code quality is enforced by ./format.sh (swiftlint) and ./run-tests.sh.
 swift build -c release --arch arm64 --arch x86_64 --product aerospace \
-    --build-path .build-cli \
-    -Xswiftc -warnings-as-errors # CLI
+    --build-path .build-cli # CLI
 
 # todo: make xcodebuild use the same toolchain as swift
 # toolchain="$(plutil -extract CFBundleIdentifier raw ~/Library/Developer/Toolchains/swift-6.1-RELEASE.xctoolchain/Info.plist)"
