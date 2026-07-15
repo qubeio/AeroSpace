@@ -25,6 +25,21 @@ are sanitized and truncated to 40 characters.
 
 This command is intended for diagnosing layout and tree-structure problems. It does not modify the tree.
 
+=== BSP decision logs
+
+AeroSpace records BSP insertion and tree-shape decisions in the macOS unified log. After reproducing
+a layout problem, retrieve recent events with:
+
+----
+log show --last 10m --info --style compact --predicate 'subsystem CONTAINS "aerospace" AND category == "bsp"'
+----
+
+To watch decisions while reproducing the problem, use:
+
+----
+log stream --info --style compact --predicate 'subsystem CONTAINS "aerospace" AND category == "bsp"'
+----
+
 // =========================================================== Options
 include::util/conditional-options-header.adoc[]
 

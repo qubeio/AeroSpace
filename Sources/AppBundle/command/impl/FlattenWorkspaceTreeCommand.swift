@@ -12,6 +12,9 @@ struct FlattenWorkspaceTreeCommand: Command {
         for window in windows {
             window.bind(to: workspace.rootTilingContainer, adaptiveWeight: 1, index: INDEX_BIND_LAST)
         }
+        bspLog.info(
+            "flatten-workspace-tree workspace=\(workspace.name, privacy: .public) windows=\(windows.count, privacy: .public)",
+        )
         return true
     }
 }
