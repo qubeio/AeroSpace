@@ -31,6 +31,13 @@ if /bin/test -z "${NUKE_PATH:-}"; then
     add-optional-dep-to-bin git
     add-optional-dep-to-bin swift
     add-optional-dep-to-bin swiftly
+    # Java is keg-only in Homebrew (not symlinked into /usr/bin), so check the keg path directly
+    if /bin/test -f /opt/homebrew/opt/openjdk/bin/java; then
+        /bin/cat > ".deps/bin/java" <<EOF
+#!/bin/bash
+exec '/opt/homebrew/opt/openjdk/bin/java' "\$@"
+EOF
+    fi
 
     export PATH="${PWD}/.deps/bin:/bin:/usr/bin"
     chmod +x .deps/bin/*
