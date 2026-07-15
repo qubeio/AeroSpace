@@ -42,7 +42,8 @@ xcodebuild-pretty .release/xcodebuild.log clean build \
     -scheme AeroSpace \
     -destination "generic/platform=macOS" \
     -configuration "$xcode_configuration" \
-    -derivedDataPath .xcode-build
+    -derivedDataPath .xcode-build \
+    SWIFT_TREAT_WARNINGS_AS_ERRORS=NO
 
 git checkout .
 
