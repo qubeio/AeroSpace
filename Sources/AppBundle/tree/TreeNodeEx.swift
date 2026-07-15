@@ -49,6 +49,16 @@ extension TreeNode {
         self as? Window ?? mostRecentChild?.mostRecentWindowRecursive
     }
 
+    var tailWindowRecursive: Window? {
+        if let window = self as? Window {
+            return window
+        }
+        guard let container = self as? TilingContainer else {
+            return nil
+        }
+        return container.children.last?.tailWindowRecursive
+    }
+
     var anyLeafWindowRecursive: Window? {
         if let window = self as? Window {
             return window

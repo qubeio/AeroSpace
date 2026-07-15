@@ -67,6 +67,11 @@ struct BSPConfig: ConvenienceCopyable {
     var splitRatio: Double = 0.5
     var autoSplitThreshold: Double = 1.2
     var preferredSplitDirection: Orientation? = nil
+    var insertionPoint: BspInsertionPoint = .tail
+}
+
+enum BspInsertionPoint: String {
+    case tail, focused
 }
 
 enum DefaultContainerOrientation: String {

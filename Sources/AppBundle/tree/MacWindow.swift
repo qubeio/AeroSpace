@@ -223,15 +223,21 @@ private func unbindAndGetBindingDataForNewWindow(_ windowId: UInt32, _ macApp: M
 @MainActor
 private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, windowId: UInt32, window: Window?) -> BindingData {
     window?.unbindFromParent() // It's important to unbind to get correct data from below
-    let mruWindow = workspace.mostRecentWindowRecursive
     let rootContainer = workspace.rootTilingContainer
 
     // BSP insertion: split the anchor window's slot in the tree.
-    // The anchor is the MRU window if it's tiled; otherwise (MRU is floating, fullscreen, etc.)
-    // fall back to the most recent *tiled* window so the split still lands in the tree.
+    // Tail mode is deterministic regardless of focus. Focused mode preserves the previous behavior,
+    // including the fallback to the most recent tiled window when MRU is floating or fullscreen.
+    let tailAnchor = rootContainer.layout == .bsp && config.bsp.insertionPoint == .tail
+        ? rootContainer.tailWindowRecursive
+        : nil
+    let mruWindow = tailAnchor == nil ? workspace.mostRecentWindowRecursive : nil
     let anchor: Window?
     let anchorResolution: String
-    if mruWindow?.parent is TilingContainer {
+    if let tailAnchor {
+        anchor = tailAnchor
+        anchorResolution = "tail"
+    } else if mruWindow?.parent is TilingContainer {
         anchor = mruWindow
         anchorResolution = "mru-tiled"
     } else if let fallback = rootContainer.mostRecentWindowRecursive {

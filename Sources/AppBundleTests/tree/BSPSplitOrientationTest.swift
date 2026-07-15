@@ -46,6 +46,75 @@ final class BSPSplitOrientationTest: XCTestCase {
         )
     }
 
+    func testDefaultTailInsertion_ignoresFocusedWindow() async throws {
+        let workspace = Workspace.get(byName: name)
+        let windows = try await insertSpiralWindows(1 ... 4, into: workspace)
+        windows[1].markAsMostRecentChild()
+        XCTAssertEqual(config.bsp.insertionPoint, .tail)
+        XCTAssertTrue(workspace.mostRecentWindowRecursive === windows[1])
+        XCTAssertTrue(workspace.rootTilingContainer.tailWindowRecursive === windows[3])
+
+        let window5 = TestWindow.new(id: 5, parent: workspace)
+        try await window5.relayoutWindow(on: workspace, forceTile: true)
+
+        assertEquals(
+            .h_tiles([.h_tiles([
+                .window(1),
+                .v_tiles([
+                    .window(2),
+                    .h_tiles([
+                        .window(3),
+                        .v_tiles([.window(4), .window(5)]),
+                    ]),
+                ]),
+            ])]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    func testFocusedInsertion_splitsFocusedWindow() async throws {
+        config.bsp.insertionPoint = .focused
+        let workspace = Workspace.get(byName: name)
+        let windows = try await insertSpiralWindows(1 ... 4, into: workspace)
+        windows[1].markAsMostRecentChild()
+        XCTAssertTrue(workspace.mostRecentWindowRecursive === windows[1])
+
+        let window5 = TestWindow.new(id: 5, parent: workspace)
+        try await window5.relayoutWindow(on: workspace, forceTile: true)
+
+        assertEquals(
+            .h_tiles([.h_tiles([
+                .window(1),
+                .v_tiles([
+                    .h_tiles([.window(2), .window(5)]),
+                    .h_tiles([.window(3), .window(4)]),
+                ]),
+            ])]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    func testTailInsertion_afterTailCloses_usesSurvivingDeepestWindow() async throws {
+        let workspace = Workspace.get(byName: name)
+        let windows = try await insertSpiralWindows(1 ... 4, into: workspace)
+        windows[3].unbindFromParent()
+        workspace.normalizeContainers()
+
+        let window5 = TestWindow.new(id: 5, parent: workspace)
+        try await window5.relayoutWindow(on: workspace, forceTile: true)
+
+        assertEquals(
+            .h_tiles([
+                .window(1),
+                .v_tiles([
+                    .window(2),
+                    .h_tiles([.window(3), .window(5)]),
+                ]),
+            ]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
     func testPreferredSplitDirectionOverride_ignoresGeometry() async throws {
         config.bsp.preferredSplitDirection = .v
         let workspace = Workspace.get(byName: name)
@@ -91,6 +160,7 @@ final class BSPSplitOrientationTest: XCTestCase {
     /// still split against the most recent *tiled* window's slot instead of falling through to a flat
     /// append on the root container.
     func testFloatingMruWindow_anchorsToMostRecentTiledWindow() async throws {
+        config.bsp.insertionPoint = .focused
         let workspace = Workspace.get(byName: name)
         _ = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
         let floatingWindow = TestWindow.new(id: 2, parent: workspace) // floating: parent is workspace directly
@@ -126,6 +196,7 @@ final class BSPSplitOrientationTest: XCTestCase {
     /// MRU window lives in the macOS fullscreen windows container (not a TilingContainer). Anchoring
     /// should fall back to the most recent tiled window, same as the floating case.
     func testFullscreenMruWindow_anchorsToMostRecentTiledWindow() async throws {
+        config.bsp.insertionPoint = .focused
         let workspace = Workspace.get(byName: name)
         _ = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
         let fullscreenContainer = MacosFullscreenWindowsContainer(parent: workspace)
@@ -140,5 +211,15 @@ final class BSPSplitOrientationTest: XCTestCase {
             .h_tiles([.h_tiles([.window(1), .window(3)])]),
             workspace.rootTilingContainer.layoutDescription,
         )
+    }
+
+    private func insertSpiralWindows(_ ids: ClosedRange<UInt32>, into workspace: Workspace) async throws -> [TestWindow] {
+        var windows: [TestWindow] = []
+        for id in ids {
+            let window = TestWindow.new(id: id, parent: workspace)
+            try await window.relayoutWindow(on: workspace, forceTile: true)
+            windows.append(window)
+        }
+        return windows
     }
 }

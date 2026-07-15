@@ -25,7 +25,7 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # You can set 0 to disable the padding feature
 accordion-padding = 30
 
-# Possible values: tiles|accordion
+# Possible values: tiles|accordion|bsp
 default-root-container-layout = 'tiles'
 
 # Possible values: horizontal|vertical|auto
@@ -57,6 +57,11 @@ persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B",
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 # See: https://nikitabobko.github.io/AeroSpace/commands#mode
 on-mode-changed = []
+
+# BSP inserts new windows at the spiral tail by default, so focus changes don't alter the layout shape.
+# Set this to 'focused' to split the currently focused window instead.
+[bsp]
+    insertion-point = 'tail'
 
 # Possible values: (qwerty|dvorak|colemak)
 # See https://nikitabobko.github.io/AeroSpace/guide#key-mapping
