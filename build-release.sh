@@ -38,6 +38,11 @@ rm -rf .release && mkdir .release
 
 xcode_configuration="Release"
 xcodebuild -version
+# Xcode 26 beta bug: generates conflicting -warnings-as-errors + -suppress-warnings flags for SPM
+# packages. Wipe the cached package build plan so it regenerates without the conflict, and pass
+# SWIFT_TREAT_WARNINGS_AS_ERRORS=NO so the new plan omits -warnings-as-errors for dependencies
+# (the AeroSpace source itself is already compiled with -warnings-as-errors via the swift build step above).
+rm -rf .build/out/Intermediates.noindex/swift-collections.build
 xcodebuild-pretty .release/xcodebuild.log clean build \
     -scheme AeroSpace \
     -destination "generic/platform=macOS" \
