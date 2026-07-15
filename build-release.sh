@@ -23,7 +23,16 @@ done
 ./script/check-uncommitted-files.sh
 ./generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
 
-swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors # CLI
+
+
+# Swift 6.2 / Xcode 26 beta: -Xswiftc -warnings-as-errors is omitted here. When building a
+# universal binary (--arch arm64 --arch x86_64), swift build uses the Xcode-compatible SPM
+# backend, which automatically adds -suppress-warnings to third-party package builds. Swift 6.2
+# made -warnings-as-errors and -suppress-warnings mutually exclusive (hard error). Since
+# -Xswiftc applies to ALL compilation units (including packages), it cannot be used with the
+# Xcode backend. Code quality is enforced by ./format.sh (swiftlint) and ./run-tests.sh.
+swift build -c release --arch arm64 --arch x86_64 --product aerospace \
+    --build-path .build-cli # CLI
 
 # todo: make xcodebuild use the same toolchain as swift
 # toolchain="$(plutil -extract CFBundleIdentifier raw ~/Library/Developer/Toolchains/swift-6.1-RELEASE.xctoolchain/Info.plist)"
@@ -47,7 +56,7 @@ xcodebuild-pretty .release/xcodebuild.log clean build \
 git checkout .
 
 cp -r ".xcode-build/Build/Products/$xcode_configuration/AeroSpace.app" .release
-cp -r .build/apple/Products/Release/aerospace .release
+cp -r .build-cli/out/Products/Release/aerospace .release
 
 ################
 ### SIGN CLI ###

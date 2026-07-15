@@ -11,6 +11,7 @@
 /.xcode-build
 # Swift package manager
 /.build
+/.build-cli
 /.swiftpm
 /.vscode
 # External dependencies

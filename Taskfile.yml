@@ -5,6 +5,10 @@ vars:
   CLI_NAME: aerospace
   INSTALL_PATH: /Applications/{{.APP_NAME}}.app
   CLI_INSTALL_PATH: /usr/local/bin/{{.CLI_NAME}}
+  # Override with: task build:release CODESIGN_IDENTITY="Apple Development: ..."
+  # Required on dev machines that don't have the "Developer ID Application" private key.
+  # Find available identities: security find-identity -v -p codesigning
+  CODESIGN_IDENTITY: '{{default "" .CODESIGN_IDENTITY}}'
 
 tasks:
   build:
@@ -13,9 +17,9 @@ tasks:
       - ./build-debug.sh
 
   build:release:
-    desc: Build release version (optimized)
+    desc: "Build release version (optimized). Override signing: task build:release CODESIGN_IDENTITY=\"Apple Development: ...\""
     cmds:
-      - ./build-release.sh
+      - '{{if .CODESIGN_IDENTITY}}./build-release.sh --codesign-identity "{{.CODESIGN_IDENTITY}}"{{else}}./build-release.sh{{end}}'
 
   install:
     desc: Install debug build locally
@@ -102,7 +106,7 @@ tasks:
   clean:
     desc: Clean build artifacts
     cmds:
-      - rm -rf .build .debug .release .xcode-build
+      - rm -rf .build .build-cli .debug .release .xcode-build
 
   sync:
     desc: Fetch latest changes from upstream
