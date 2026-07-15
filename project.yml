@@ -43,8 +43,10 @@ targets:
         Release:
           PRODUCT_NAME: AeroSpace
           PRODUCT_BUNDLE_IDENTIFIER: com.qubeio.aerospace
-          SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
-          GCC_TREAT_WARNINGS_AS_ERRORS: YES
+          # Warnings-as-errors is enforced by 'swift build -Xswiftc -warnings-as-errors' earlier in
+          # build-release.sh. Removing it here avoids a Swift 6.2 / Xcode 26 beta conflict where
+          # xcodebuild propagates -warnings-as-errors to SPM packages that also receive
+          # -suppress-warnings — the combination is now a hard error.
     entitlements:
       path: resources/AeroSpace.entitlements
       properties:

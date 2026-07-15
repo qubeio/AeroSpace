@@ -25,6 +25,15 @@ done
 
 swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors # CLI
 
+# Swift 6.2 / Xcode 26 beta: 'swift build -Xswiftc -warnings-as-errors' above writes a build plan
+# to .build/out that includes -warnings-as-errors for ALL targets. xcodebuild then picks this up
+# as its "on-disk description" and also adds -suppress-warnings to SPM package builds (standard
+# Xcode behaviour to silence third-party warnings). The two flags are now mutually exclusive in
+# Swift 6.2, causing a hard error. Deleting .build/out forces xcodebuild to generate a fresh plan
+# from the xcodeproj (which no longer has SWIFT_TREAT_WARNINGS_AS_ERRORS). The CLI binary produced
+# above is preserved in .build/apple, which is a different path.
+rm -rf .build/out
+
 # todo: make xcodebuild use the same toolchain as swift
 # toolchain="$(plutil -extract CFBundleIdentifier raw ~/Library/Developer/Toolchains/swift-6.1-RELEASE.xctoolchain/Info.plist)"
 # xcodebuild -toolchain "$toolchain" \
@@ -38,17 +47,11 @@ rm -rf .release && mkdir .release
 
 xcode_configuration="Release"
 xcodebuild -version
-# Xcode 26 beta bug: generates conflicting -warnings-as-errors + -suppress-warnings flags for SPM
-# packages. Wipe the cached package build plan so it regenerates without the conflict, and pass
-# SWIFT_TREAT_WARNINGS_AS_ERRORS=NO so the new plan omits -warnings-as-errors for dependencies
-# (the AeroSpace source itself is already compiled with -warnings-as-errors via the swift build step above).
-rm -rf .build/out/Intermediates.noindex/swift-collections.build
 xcodebuild-pretty .release/xcodebuild.log clean build \
     -scheme AeroSpace \
     -destination "generic/platform=macOS" \
     -configuration "$xcode_configuration" \
-    -derivedDataPath .xcode-build \
-    SWIFT_TREAT_WARNINGS_AS_ERRORS=NO
+    -derivedDataPath .xcode-build
 
 git checkout .
 
