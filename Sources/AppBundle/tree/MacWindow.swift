@@ -228,7 +228,7 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
 
     // BSP insertion: split the MRU window's slot in the tree
     if rootContainer.layout == .bsp, let mruWindow, let mruParent = mruWindow.parent as? TilingContainer {
-        let splitOrientation = bspSplitOrientation(mruWindow: mruWindow, parentOrientation: mruParent.orientation)
+        let splitOrientation = bspSplitOrientation(mruWindow: mruWindow, workspace: workspace)
         let mruData = mruWindow.unbindFromParent()
         let newContainer = TilingContainer(
             parent: mruParent,
@@ -258,22 +258,19 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
 }
 
 /// Determine the orientation for a BSP split at the MRU window's position.
-/// Priority: preferredSplitDirection → aspect-ratio vs autoSplitThreshold → alternate from parent.
+/// Priority: preferredSplitDirection → aspect-ratio (computed from current tree shape) vs autoSplitThreshold.
 @MainActor
-private func bspSplitOrientation(mruWindow: Window, parentOrientation: Orientation) -> Orientation {
+private func bspSplitOrientation(mruWindow: Window, workspace: Workspace) -> Orientation {
     let bsp = config.bsp
     if let preferred = bsp.preferredSplitDirection {
         return preferred
     }
-    if let rect = mruWindow.lastAppliedLayoutVirtualRect, rect.height > 0 {
-        let ratio = rect.width / rect.height
-        if ratio > bsp.autoSplitThreshold {
-            return .h // wide slot → split side-by-side
-        } else if (1.0 / ratio) > bsp.autoSplitThreshold {
-            return .v // tall slot → split top-to-bottom
-        }
+    let rect = computeVirtualSlotRect(of: mruWindow, workspace: workspace)
+    guard rect.width > 0, rect.height > 0 else {
+        let monitor = workspace.workspaceMonitor
+        return monitor.width >= monitor.height ? .h : .v // degenerate rect: fall back to monitor shape
     }
-    return parentOrientation.opposite // fallback: alternate orientation
+    return rect.width / rect.height >= bsp.autoSplitThreshold ? .h : .v
 }
 
 @MainActor
