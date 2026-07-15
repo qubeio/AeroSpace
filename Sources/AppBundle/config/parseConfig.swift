@@ -272,6 +272,7 @@ private let bspConfigParser: [String: any ParserProtocol<BSPConfig>] = [
     "split-ratio": Parser(\.splitRatio, parseDouble),
     "auto-split-threshold": Parser(\.autoSplitThreshold, parseDouble),
     "preferred-split-direction": Parser(\.preferredSplitDirection, parseOptionalOrientation),
+    "insertion-point": Parser(\.insertionPoint, parseBspInsertionPoint),
 ]
 
 private func parseBSPConfig(_ raw: Json, _ backtrace: ConfigBacktrace, _ errors: inout [ConfigParseError]) -> BSPConfig {
@@ -292,6 +293,16 @@ private func parseOptionalOrientation(_ raw: Json, _ backtrace: ConfigBacktrace)
         case "auto", "": return .success(nil)
         default: return .failure(.semantic(backtrace, "Invalid orientation '\(str)'. Expected 'horizontal', 'vertical', or 'auto'"))
     }
+}
+
+private func parseBspInsertionPoint(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<BspInsertionPoint> {
+    guard let str = raw.asStringOrNil else {
+        return .failure(expectedActualTypeError(expected: .string, actual: raw.tomlType, backtrace))
+    }
+    guard let insertionPoint = BspInsertionPoint(rawValue: str.lowercased()) else {
+        return .failure(.semantic(backtrace, "Invalid BSP insertion point '\(str)'. Expected 'tail' or 'focused'"))
+    }
+    return .success(insertionPoint)
 }
 
 func parseIndentForNestedContainersWithTheSameOrientation(_ _: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Void> {

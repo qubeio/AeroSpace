@@ -15,8 +15,32 @@ final class ConfigTest: XCTestCase {
 
     func testParseDefaultConfig() {
         let toml = try! String(contentsOf: projectRoot.appending(component: "docs/config-examples/default-config.toml"), encoding: .utf8)
-        let (_, errors) = parseConfig(toml)
+        let (config, errors) = parseConfig(toml)
         assertEquals(errors, [])
+        assertEquals(config.bsp.insertionPoint, .tail)
+    }
+
+    func testParseBspInsertionPoint() {
+        assertEquals(BSPConfig().insertionPoint, .tail)
+
+        let (config, errors) = parseConfig(
+            """
+            [bsp]
+                insertion-point = 'focused'
+            """,
+        )
+        assertEquals(errors, [])
+        assertEquals(config.bsp.insertionPoint, .focused)
+    }
+
+    func testInvalidBspInsertionPoint() {
+        let (_, errors) = parseConfig(
+            """
+            [bsp]
+                insertion-point = 'bogus'
+            """,
+        )
+        assertEquals(errors, ["bsp.insertion-point: Invalid BSP insertion point 'bogus'. Expected 'tail' or 'focused'"])
     }
 
     func testConfigVersionOutOfBounds() {
