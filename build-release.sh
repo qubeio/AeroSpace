@@ -56,7 +56,7 @@ xcodebuild-pretty .release/xcodebuild.log clean build \
 git checkout .
 
 cp -r ".xcode-build/Build/Products/$xcode_configuration/AeroSpace.app" .release
-cp -r .build-cli/apple/Products/Release/aerospace .release
+cp -r .build-cli/out/Products/Release/aerospace .release
 
 ################
 ### SIGN CLI ###
