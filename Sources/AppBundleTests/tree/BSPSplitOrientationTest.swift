@@ -86,4 +86,59 @@ final class BSPSplitOrientationTest: XCTestCase {
         XCTAssertEqual(rect.width, monitorRect.width, accuracy: 0.0001)
         XCTAssertEqual(rect.height, monitorRect.height, accuracy: 0.0001)
     }
+
+    /// MRU window is floating (parent is the workspace, not a tiling container). The new window must
+    /// still split against the most recent *tiled* window's slot instead of falling through to a flat
+    /// append on the root container.
+    func testFloatingMruWindow_anchorsToMostRecentTiledWindow() async throws {
+        let workspace = Workspace.get(byName: name)
+        _ = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+        let floatingWindow = TestWindow.new(id: 2, parent: workspace) // floating: parent is workspace directly
+        floatingWindow.markAsMostRecentChild()
+        XCTAssertTrue(workspace.mostRecentWindowRecursive === floatingWindow)
+
+        let newWindow = TestWindow.new(id: 3, parent: workspace)
+        try await newWindow.relayoutWindow(on: workspace, forceTile: true)
+
+        assertEquals(
+            .h_tiles([.h_tiles([.window(1), .window(3)])]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    /// Only floating windows exist, so the root tiling container is empty. The new window must bind
+    /// directly to the (empty) root container without crashing.
+    func testOnlyFloatingWindowsExist_newWindowBindsToEmptyRootContainer() async throws {
+        let workspace = Workspace.get(byName: name)
+        let floatingWindow = TestWindow.new(id: 1, parent: workspace)
+        floatingWindow.markAsMostRecentChild()
+        XCTAssertTrue(workspace.rootTilingContainer.isEffectivelyEmpty)
+
+        let newWindow = TestWindow.new(id: 2, parent: workspace)
+        try await newWindow.relayoutWindow(on: workspace, forceTile: true)
+
+        assertEquals(
+            .h_tiles([.window(2)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    /// MRU window lives in the macOS fullscreen windows container (not a TilingContainer). Anchoring
+    /// should fall back to the most recent tiled window, same as the floating case.
+    func testFullscreenMruWindow_anchorsToMostRecentTiledWindow() async throws {
+        let workspace = Workspace.get(byName: name)
+        _ = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+        let fullscreenContainer = MacosFullscreenWindowsContainer(parent: workspace)
+        let fullscreenWindow = TestWindow.new(id: 2, parent: fullscreenContainer)
+        fullscreenWindow.markAsMostRecentChild()
+        XCTAssertTrue(workspace.mostRecentWindowRecursive === fullscreenWindow)
+
+        let newWindow = TestWindow.new(id: 3, parent: workspace)
+        try await newWindow.relayoutWindow(on: workspace, forceTile: true)
+
+        assertEquals(
+            .h_tiles([.h_tiles([.window(1), .window(3)])]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
 }
