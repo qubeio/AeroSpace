@@ -202,7 +202,7 @@ extension Window {
     @MainActor
     func relayoutWindow(on workspace: Workspace, forceTile: Bool = false) async throws {
         let data = forceTile
-            ? unbindAndGetBindingDataForNewTilingWindow(workspace, window: self)
+            ? unbindAndGetBindingDataForNewTilingWindow(workspace, windowId: windowId, window: self)
             : try await unbindAndGetBindingDataForNewWindow(self.asMacWindow().windowId, self.asMacWindow().macApp, workspace, window: self)
         bind(to: data.parent, adaptiveWeight: data.adaptiveWeight, index: data.index)
     }
@@ -215,13 +215,13 @@ private func unbindAndGetBindingDataForNewWindow(_ windowId: UInt32, _ macApp: M
     return switch try await macApp.getAxUiElementWindowType(windowId, windowLevel) {
         case .popup: BindingData(parent: macosPopupWindowsContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
         case .dialog: BindingData(parent: workspace, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
-        case .window: unbindAndGetBindingDataForNewTilingWindow(workspace, window: window)
+        case .window: unbindAndGetBindingDataForNewTilingWindow(workspace, windowId: windowId, window: window)
     }
 }
 
 // The function is private because it's unsafe. It leaves the window in unbound state
 @MainActor
-private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, window: Window?) -> BindingData {
+private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, windowId: UInt32, window: Window?) -> BindingData {
     window?.unbindFromParent() // It's important to unbind to get correct data from below
     let mruWindow = workspace.mostRecentWindowRecursive
     let rootContainer = workspace.rootTilingContainer
@@ -229,9 +229,23 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
     // BSP insertion: split the anchor window's slot in the tree.
     // The anchor is the MRU window if it's tiled; otherwise (MRU is floating, fullscreen, etc.)
     // fall back to the most recent *tiled* window so the split still lands in the tree.
-    let anchor = (mruWindow?.parent is TilingContainer) ? mruWindow : rootContainer.mostRecentWindowRecursive
+    let anchor: Window?
+    let anchorResolution: String
+    if mruWindow?.parent is TilingContainer {
+        anchor = mruWindow
+        anchorResolution = "mru-tiled"
+    } else if let fallback = rootContainer.mostRecentWindowRecursive {
+        anchor = fallback
+        anchorResolution = "fallback-most-recent-tiled"
+    } else {
+        anchor = nil
+        anchorResolution = "none"
+    }
+
+    let bindingData: BindingData
+    let branch: String
     if rootContainer.layout == .bsp, let anchor, let anchorParent = anchor.parent as? TilingContainer {
-        let splitOrientation = bspSplitOrientation(mruWindow: anchor, workspace: workspace)
+        let splitOrientation = bspSplitOrientation(anchorWindow: anchor, workspace: workspace)
         let anchorData = anchor.unbindFromParent()
         let newContainer = TilingContainer(
             parent: anchorParent,
@@ -241,39 +255,63 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
             index: anchorData.index,
         )
         anchor.bind(to: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 0)
-        return BindingData(parent: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 1)
-    }
-
-    // Non-BSP: original behaviour — insert after MRU in its parent container
-    if let mruWindow, let tilingParent = mruWindow.parent as? TilingContainer {
-        return BindingData(
+        bindingData = BindingData(parent: newContainer, adaptiveWeight: WEIGHT_AUTO, index: 1)
+        branch = "bsp-split"
+    } else if let mruWindow, let tilingParent = mruWindow.parent as? TilingContainer {
+        // Non-BSP: original behaviour — insert after MRU in its parent container
+        bindingData = BindingData(
             parent: tilingParent,
             adaptiveWeight: WEIGHT_AUTO,
             index: mruWindow.ownIndex.orDie() + 1,
         )
+        branch = "non-bsp-mru-append"
     } else {
-        return BindingData(
+        bindingData = BindingData(
             parent: rootContainer,
             adaptiveWeight: WEIGHT_AUTO,
             index: INDEX_BIND_LAST,
         )
+        branch = "root-flat-append"
     }
+
+    bspLog.info(
+        "insertion window=\(windowId, privacy: .public) workspace=\(workspace.name, privacy: .public) root-layout=\(rootContainer.layout.rawValue, privacy: .public) anchor=\(anchorResolution, privacy: .public) branch=\(branch, privacy: .public)",
+    )
+    return bindingData
 }
 
 /// Determine the orientation for a BSP split at the MRU window's position.
 /// Priority: preferredSplitDirection → aspect-ratio (computed from current tree shape) vs autoSplitThreshold.
 @MainActor
-private func bspSplitOrientation(mruWindow: Window, workspace: Workspace) -> Orientation {
+private func bspSplitOrientation(anchorWindow: Window, workspace: Workspace) -> Orientation {
     let bsp = config.bsp
+    let rect = computeVirtualSlotRect(of: anchorWindow, workspace: workspace)
+    let ratio = rect.height > 0 ? rect.width / rect.height : 0
+    let orientation: Orientation
     if let preferred = bsp.preferredSplitDirection {
-        return preferred
-    }
-    let rect = computeVirtualSlotRect(of: mruWindow, workspace: workspace)
-    guard rect.width > 0, rect.height > 0 else {
+        orientation = preferred
+    } else if rect.width <= 0 || rect.height <= 0 {
         let monitor = workspace.workspaceMonitor
-        return monitor.width >= monitor.height ? .h : .v // degenerate rect: fall back to monitor shape
+        orientation = monitor.width >= monitor.height ? .h : .v // degenerate rect: fall back to monitor shape
+    } else {
+        orientation = ratio >= bsp.autoSplitThreshold ? .h : .v
     }
-    return rect.width / rect.height >= bsp.autoSplitThreshold ? .h : .v
+    let appName = anchorWindow.app.name ?? "<unknown>"
+    let rectDescription = String(
+        format: "%.2f,%.2f,%.2f,%.2f",
+        Double(rect.topLeftX),
+        Double(rect.topLeftY),
+        Double(rect.width),
+        Double(rect.height),
+    )
+    let ratioDescription = String(format: "%.2f", Double(ratio))
+    let thresholdDescription = String(format: "%.2f", Double(bsp.autoSplitThreshold))
+    let preferredOverride = bsp.preferredSplitDirection != nil
+    let decision = orientation == .h ? "h" : "v"
+    bspLog.info(
+        "orientation anchor=\(anchorWindow.windowId, privacy: .public) app=\(appName, privacy: .public) slot=\(rectDescription, privacy: .public) ratio=\(ratioDescription, privacy: .public) threshold=\(thresholdDescription, privacy: .public) preferred-override=\(preferredOverride, privacy: .public) decision=\(decision, privacy: .public)",
+    )
+    return orientation
 }
 
 @MainActor

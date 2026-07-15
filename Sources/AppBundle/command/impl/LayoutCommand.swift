@@ -61,13 +61,23 @@ struct LayoutCommand: Command {
         case .tilingContainer(let parent):
             let targetOrientation = targetOrientation ?? parent.orientation
             let targetLayout = targetLayout ?? parent.layout
+            let oldLayout = bspLayoutDescription(parent.layout, parent.orientation)
             parent.layout = targetLayout
             parent.changeOrientation(targetOrientation)
+            let newLayout = bspLayoutDescription(parent.layout, parent.orientation)
+            let workspace = window.nodeWorkspace?.name ?? "<none>"
+            bspLog.info(
+                "layout workspace=\(workspace, privacy: .public) old=\(oldLayout, privacy: .public) new=\(newLayout, privacy: .public)",
+            )
             return true
         case .workspace, .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer,
              .macosPopupWindowsContainer, .macosHiddenAppsWindowsContainer:
             return io.err("The window is non-tiling")
     }
+}
+
+private func bspLayoutDescription(_ layout: Layout, _ orientation: Orientation) -> String {
+    "\(orientation == .h ? "h" : "v")_\(layout.rawValue)"
 }
 
 extension Window {

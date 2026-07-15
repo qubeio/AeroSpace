@@ -36,7 +36,12 @@ func moveWindowToWorkspace(_ window: Window, _ targetWorkspace: Workspace, _ io:
         }
         return !failIfNoop
     }
+    let sourceWorkspace = window.nodeWorkspace?.name ?? "<none>"
+    let bindingDestination = window.isFloating ? "floating-workspace-append" : "root-flat-append"
     let targetContainer: NonLeafTreeNodeObject = window.isFloating ? targetWorkspace : targetWorkspace.rootTilingContainer
     window.bind(to: targetContainer, adaptiveWeight: WEIGHT_AUTO, index: index)
+    bspLog.info(
+        "move-node-to-workspace window=\(window.windowId, privacy: .public) source=\(sourceWorkspace, privacy: .public) target=\(targetWorkspace.name, privacy: .public) binding=\(bindingDestination, privacy: .public)",
+    )
     return focusFollowsWindow ? window.focusWindow() : true
 }
