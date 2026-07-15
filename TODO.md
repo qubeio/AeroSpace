@@ -14,6 +14,7 @@
 - [ ] `009` BSP — anchor insertion to most recent tiled window → [QUB-63](https://linear.app/qubeio/issue/QUB-63/bsp-anchor-insertion-to-most-recent-tiled-window-when-mru-window-is)
 
 ## Done
+- [x] `008` BSP — flatten single-child BSP containers → [QUB-62](https://linear.app/qubeio/issue/QUB-62/bsp-flatten-single-child-bsp-containers-in-normalizecontainers)
 - [x] `007` BSP — split orientation from computed slot geometry (two-window bug) → [QUB-61](https://linear.app/qubeio/issue/QUB-61/bsp-derive-split-orientation-from-computed-slot-geometry-fixes)
 - [x] `002` BSP layout — config & TOML parsing → [details](tasks/002-bsp-config.md)
 - [x] `001` BSP layout — core implementation → [details](tasks/001-bsp-core.md)

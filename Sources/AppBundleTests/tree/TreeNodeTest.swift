@@ -86,4 +86,62 @@ final class TreeNodeTest: XCTestCase {
         workspace.normalizeContainers()
         XCTAssertTrue(workspace.rootTilingContainer.children.singleOrNil() is TestWindow)
     }
+
+    func testNormalizeContainers_flattenSingleChildBspContainer() {
+        let workspace = Workspace.get(byName: name)
+        let wrapper = TilingContainer(parent: workspace.rootTilingContainer, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST)
+        TestWindow.new(id: 1, parent: wrapper)
+        let w2 = TestWindow.new(id: 2, parent: wrapper)
+        w2.unbindFromParent()
+
+        workspace.normalizeContainers()
+        assertEquals(
+            .h_tiles([.window(1)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    func testNormalizeContainers_flattenNestedSingleChildBspContainers() {
+        let workspace = Workspace.get(byName: name)
+        let outer = TilingContainer(parent: workspace.rootTilingContainer, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST)
+        let inner = TilingContainer(parent: outer, adaptiveWeight: 1, .v, .bsp, index: INDEX_BIND_LAST)
+        TestWindow.new(id: 1, parent: inner)
+
+        workspace.normalizeContainers()
+        assertEquals(
+            .h_tiles([.window(1)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    func testNormalizeContainers_bspRootWithSingleWindow_notFlattened() {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+
+        workspace.normalizeContainers()
+        assertEquals(
+            .h_tiles([.window(1)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
+    func testNormalizeContainers_bspFlattensRegardlessOfFlag_tilesRespectsFlag() {
+        XCTAssertFalse(config.enableNormalizationFlattenContainers)
+        let workspace = Workspace.get(byName: name)
+        workspace.rootTilingContainer.apply {
+            TilingContainer(parent: $0, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST).apply {
+                TestWindow.new(id: 1, parent: $0)
+            }
+            TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
+                TestWindow.new(id: 2, parent: $0)
+            }
+        }
+
+        workspace.normalizeContainers()
+        assertEquals(
+            .h_tiles([.window(1), .v_tiles([.window(2)])]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
 }
