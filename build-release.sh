@@ -23,16 +23,16 @@ done
 ./script/check-uncommitted-files.sh
 ./generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
 
-swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors # CLI
 
-# Swift 6.2 / Xcode 26 beta: 'swift build -Xswiftc -warnings-as-errors' above writes a build plan
-# to .build/out that includes -warnings-as-errors for ALL targets. xcodebuild then picks this up
-# as its "on-disk description" and also adds -suppress-warnings to SPM package builds (standard
-# Xcode behaviour to silence third-party warnings). The two flags are now mutually exclusive in
-# Swift 6.2, causing a hard error. Deleting .build/out forces xcodebuild to generate a fresh plan
-# from the xcodeproj (which no longer has SWIFT_TREAT_WARNINGS_AS_ERRORS). The CLI binary produced
-# above is preserved in .build/apple, which is a different path.
-rm -rf .build/out
+# Build CLI to a separate directory (.build-cli) so it does not touch the shared .build/
+# directory that xcodebuild uses for SPM package builds. Without this isolation, swift build
+# -Xswiftc -warnings-as-errors writes a package build plan into .build/out that includes
+# -warnings-as-errors for ALL targets; xcodebuild then picks this up and also adds
+# -suppress-warnings for third-party packages — a combination that became a hard error in
+# Swift 6.2 / Xcode 26 beta.
+swift build -c release --arch arm64 --arch x86_64 --product aerospace \
+    --build-path .build-cli \
+    -Xswiftc -warnings-as-errors # CLI
 
 # todo: make xcodebuild use the same toolchain as swift
 # toolchain="$(plutil -extract CFBundleIdentifier raw ~/Library/Developer/Toolchains/swift-6.1-RELEASE.xctoolchain/Info.plist)"
@@ -56,7 +56,7 @@ xcodebuild-pretty .release/xcodebuild.log clean build \
 git checkout .
 
 cp -r ".xcode-build/Build/Products/$xcode_configuration/AeroSpace.app" .release
-cp -r .build/apple/Products/Release/aerospace .release
+cp -r .build-cli/apple/Products/Release/aerospace .release
 
 ################
 ### SIGN CLI ###
