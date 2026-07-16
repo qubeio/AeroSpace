@@ -64,7 +64,10 @@ tasks:
       - echo "Installing release app to {{.INSTALL_PATH}}"
       - cp -r .release/{{.APP_NAME}}.app "{{.INSTALL_PATH}}"
       - echo "Installing release CLI to {{.CLI_INSTALL_PATH}}"
-      - sudo cp .release/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
+      - sudo install -m 0755 .release/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
+      - |
+        test "$(/usr/bin/stat -f '%Lp' "{{.CLI_INSTALL_PATH}}")" = "755"
+      - '"{{.CLI_INSTALL_PATH}}" --version'
       - echo "✅ Installed release version"
 
   install:release:build:
