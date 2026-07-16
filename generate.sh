@@ -64,5 +64,15 @@ EOF
 if test $generate_xcodeproj = 1; then
     export XCODEGEN_AEROSPACE_VERSION=$build_version
     ./script/install-dep.sh --xcodegen
-    ./.deps/xcodegen/xcodegen # https://github.com/yonaskolb/XcodeGen
+    # XcodeGen names the visible local-package reference after the checkout directory.
+    # Generate through a canonical symlink so project output is independent of worktree name.
+    xcodegen_tmp="$(mktemp -d "${TMPDIR:-/tmp}/aerospace-xcodegen.XXXXXX")"
+    trap 'rm -rf "$xcodegen_tmp"' EXIT
+    ln -s "$PWD" "$xcodegen_tmp/AeroSpace"
+    ./.deps/xcodegen/xcodegen \
+        --spec "$xcodegen_tmp/AeroSpace/project.yml" \
+        --project "$xcodegen_tmp/AeroSpace" \
+        --project-root "$xcodegen_tmp/AeroSpace" # https://github.com/yonaskolb/XcodeGen
+    rm -rf "$xcodegen_tmp"
+    trap - EXIT
 fi

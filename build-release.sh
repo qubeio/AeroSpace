@@ -19,6 +19,8 @@ done
 ./build-docs.sh
 ./build-shell-completion.sh
 
+# First validate canonical generated output. Release-only values are applied only after this
+# guard so a local signing override does not look like unrelated dirty work.
 ./generate.sh
 ./script/check-uncommitted-files.sh
 ./generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
