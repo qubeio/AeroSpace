@@ -62,6 +62,11 @@ task build:release CODESIGN_IDENTITY="Apple Development: ANDREAS FRANGOPOULQS (6
 The app will be signed for local testing (not notarized). macOS may show a first-run prompt for
 Accessibility permission — that's expected.
 
+The release script validates canonical generated files before applying this override. The signing
+identity therefore does not trip the clean-worktree guard, and no `assume-unchanged` workaround is
+required. XcodeGen runs through a canonical `AeroSpace` path so its visible local-package reference
+is identical even when the checkout directory has another name.
+
 ---
 
 ### 3. Ruby 4.0 — `cannot load such file -- logger`
