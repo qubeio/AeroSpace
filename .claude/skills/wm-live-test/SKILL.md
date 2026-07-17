@@ -24,7 +24,11 @@ every action and change one variable at a time.
    Require the client and server hashes printed by `aerospace --version` to match. If the CLI is
    not executable, the hashes differ, or the app is older than the relevant commit, stop and ask
    the user to reinstall/restart. Never restart, kill, replace, or install the window manager
-   yourself.
+   yourself. Export the verified path for every helper and observation command:
+
+   ```bash
+   export AEROSPACE_BIN="$(command -v aerospace)"
+   ```
 
 2. Record the state needed for restoration before changing anything:
 
@@ -69,19 +73,22 @@ corner, often with x near the screen width; exclude those parked frames from lay
 
 ## Spawning protocol
 
-Create one window from one distinct, unmodified temporary file:
+Create one stabilized window from one distinct, unmodified temporary file. The helper uses a fresh
+TextEdit instance, rejects restored/tabbed/extra windows, and returns `<window-id>:<process-id>` only
+after the exact new window and process have remained stable for two seconds:
 
 ```bash
-printf x > /tmp/wmtest-1.txt
-open -a TextEdit /tmp/wmtest-1.txt
-sleep 2
+test_windows=()
+test_windows+=("$(AEROSPACE_BIN="$AEROSPACE_BIN" \
+  ./.claude/skills/wm-live-test/spawn-textedit-window.sh Z 1)")
 ```
 
 Repeat with a new number only after taking the full post-spawn snapshot. Unedited files avoid save
 prompts during cleanup. With the default `bsp.insertion-point = 'tail'`, the BSP split anchors to the
 deepest last-child window. A newly bound window becomes MRU, but focus changes must not alter the
 insertion anchor. Never spawn two windows without an observation between them unless testing the
-batch case.
+batch case. Keep every returned token in `test_windows` so cleanup targets only test-created windows
+and processes.
 
 ## Canned scenarios
 
@@ -162,13 +169,15 @@ shows a non-BSP root and non-BSP insertion. Always restore with `aerospace layou
 Run cleanup even when the scenario fails:
 
 ```bash
-osascript -e 'tell application "TextEdit" to quit'
-rm -f /tmp/wmtest-*.txt
-aerospace workspace "$initial_workspace"
-test -z "$initial_window_id" || aerospace focus --window-id "$initial_window_id" || true
+AEROSPACE_BIN="$AEROSPACE_BIN" \
+  ./.claude/skills/wm-live-test/cleanup-textedit-windows.sh "${test_windows[@]}"
+"$AEROSPACE_BIN" workspace "$initial_workspace"
+test -z "$initial_window_id" || "$AEROSPACE_BIN" focus --window-id "$initial_window_id" || true
 ```
 
-Only use the TextEdit quit command after confirming there were no pre-existing TextEdit windows.
+Run process cleanup before restoring workspace/focus because app termination can change focus. The
+hard precondition that TextEdit was not already running makes every recorded TextEdit process safe
+to terminate; the cleanup helper never targets unrecorded processes.
 
 ## Reporting
 
