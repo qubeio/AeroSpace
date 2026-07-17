@@ -20,6 +20,11 @@ struct FullscreenCommand: Command {
                 "Tip: use --fail-if-noop to exit with non-zero code")
             return !args.failIfNoop
         }
+        if newState {
+            for otherWindow in target.workspace.allLeafWindowsRecursive where otherWindow != window {
+                otherWindow.isFullscreen = false
+            }
+        }
         window.isFullscreen = newState
         window.noOuterGapsInFullscreen = args.noOuterGaps
 
