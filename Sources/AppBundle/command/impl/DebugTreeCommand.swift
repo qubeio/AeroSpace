@@ -58,8 +58,9 @@ private struct DebugTreeSnapshot: Encodable {
     var textDescription: String {
         let defaultMarker = rootLayoutIsDefault ? " (default)" : ""
         let emptyMarker = children.isEmpty ? " (empty)" : ""
+        let kindLabel = kind == "workspace" ? "Workspace" : kind
         var lines = [
-            "Workspace \(name)  monitor=\(monitor) \(formatScalar(monitorRect.width))x\(formatScalar(monitorRect.height)) " +
+            "\(kindLabel) \(name)  monitor=\(monitor) \(formatScalar(monitorRect.width))x\(formatScalar(monitorRect.height)) " +
                 "root-layout=\(rootLayout)\(defaultMarker)\(emptyMarker)",
         ]
         for (index, child) in children.enumerated() {

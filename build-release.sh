@@ -58,7 +58,31 @@ xcodebuild-pretty .release/xcodebuild.log clean build \
 git checkout .
 
 cp -r ".xcode-build/Build/Products/$xcode_configuration/AeroSpace.app" .release
-cp -r .build-cli/out/Products/Release/aerospace .release
+
+# Universal `swift build --arch ...` may land the CLI under either the Apple or
+# "out" SPM product layout depending on toolchain; accept both, then fall back to find.
+cli_bin=""
+for candidate in \
+    .build-cli/apple/Products/Release/aerospace \
+    .build-cli/out/Products/Release/aerospace \
+    .build-cli/release/aerospace
+do
+    if test -f "$candidate"; then
+        cli_bin="$candidate"
+        break
+    fi
+done
+if test -z "$cli_bin"; then
+    # -quit avoids pipefail/SIGPIPE issues with `find | head`
+    cli_bin="$(find .build-cli -type f -name aerospace -print -quit 2>/dev/null || true)"
+fi
+if test -z "$cli_bin" || ! test -f "$cli_bin"; then
+    echo "Could not find aerospace CLI binary under .build-cli" >&2
+    find .build-cli -type f -name 'aerospace*' 2>/dev/null || true
+    exit 1
+fi
+echo "Using CLI binary: $cli_bin"
+cp -r "$cli_bin" .release
 
 ################
 ### SIGN CLI ###
