@@ -1,1 +1,5 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Internal tracking
+    url: https://linear.app/qubeio/project/aerospace
+    about: This is an internal qubeio project. Work is tracked in Linear, not GitHub Issues.

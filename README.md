@@ -4,7 +4,7 @@
 
 AeroSpace is an i3-like tiling window manager for macOS, maintained by [qubeio](https://github.com/qubeio/AeroSpace).
 
-Historically based on [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace); this is now a standalone product with its own roadmap.
+Originally by [Nikita Bobko](https://github.com/nikitabobko); based on [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace). This is a standalone product with its own roadmap.
 
 ## Notable features (qubeio)
 
@@ -16,18 +16,18 @@ See [PRD.md](./PRD.md) for architecture and goals.
 
 ## Key features
 
-- Tiling window manager based on a [tree paradigm](https://nikitabobko.github.io/AeroSpace/guide#tree)
+- Tiling window manager based on a [tree paradigm](docs/guide.adoc#tree)
 - [i3](https://i3wm.org/) inspired
 - Fast workspaces switching without animations and without the necessity to disable SIP
-- AeroSpace employs its [own emulation of virtual workspaces](https://nikitabobko.github.io/AeroSpace/guide#emulation-of-virtual-workspaces) instead of relying on native macOS Spaces due to [their considerable limitations](https://nikitabobko.github.io/AeroSpace/guide#emulation-of-virtual-workspaces)
-- Plain text configuration (dotfiles friendly). See: [default-config.toml](https://nikitabobko.github.io/AeroSpace/guide#default-config)
+- AeroSpace employs its [own emulation of virtual workspaces](docs/guide.adoc#emulation-of-virtual-workspaces) instead of relying on native macOS Spaces due to [their considerable limitations](docs/guide.adoc#emulation-of-virtual-workspaces)
+- Plain text configuration (dotfiles friendly). See: [default-config.toml](docs/guide.adoc#default-config)
 - CLI first (manpages and shell completion included)
 - Doesn't require disabling SIP (System Integrity Protection)
-- [Proper multi-monitor support](https://nikitabobko.github.io/AeroSpace/guide#multiple-monitors) (i3-like paradigm)
+- [Proper multi-monitor support](docs/guide.adoc#multiple-monitors) (i3-like paradigm)
 
 ## Installation
 
-There is no Homebrew cask for this build yet. Build from source:
+Build from source:
 
 ```bash
 git clone https://github.com/qubeio/AeroSpace.git
@@ -38,33 +38,24 @@ cd AeroSpace
 
 Setup details (dependencies, codesign certificate, tests): [dev-docs/development.md](./dev-docs/development.md)
 
-In multi-monitor setup please make sure that monitors [are properly arranged](https://nikitabobko.github.io/AeroSpace/guide#proper-monitor-arrangement).
-
-For a pre-built binary of the original project, use its [Homebrew cask](https://nikitabobko.github.io/AeroSpace/guide#installation) — different bundle IDs mean both apps can coexist.
+In multi-monitor setup please make sure that monitors [are properly arranged](docs/guide.adoc#proper-monitor-arrangement).
 
 > [!NOTE]
 > This build is not [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). You may need to remove the quarantine attribute after download, or allow the app in System Settings.
 
 ## Documentation
 
-Shared conceptual docs (commands, config, workspaces) still apply for most behavior:
-
-- [AeroSpace Guide](https://nikitabobko.github.io/AeroSpace/guide)
-- [AeroSpace Commands](https://nikitabobko.github.io/AeroSpace/commands)
-- [AeroSpace Goodies](https://nikitabobko.github.io/AeroSpace/goodies)
-
-qubeio design notes live under [tasks/](./tasks/) and [PRD.md](./PRD.md).
-
-Demo videos (original project):
-
-- [YouTube 91 sec Demo](https://www.youtube.com/watch?v=UOl7ErqWbrk)
-- [YouTube Guide by Josean Martinez](https://www.youtube.com/watch?v=-FoWClVHG5g)
+- [Guide](docs/guide.adoc)
+- [Commands](docs/commands.adoc)
+- [Goodies](docs/goodies.adoc)
+- [PRD.md](./PRD.md)
 
 ## Development
 
+Internal project — see [CONTRIBUTING.md](./CONTRIBUTING.md). Work is tracked in [Linear](https://linear.app/qubeio/project/aerospace).
+
 - [dev-docs/development.md](./dev-docs/development.md) — build, test, and debug
-- [CLAUDE.md](./CLAUDE.md) — agent and contributor workflow (Linear issues, conventions)
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution guidelines
+- [CLAUDE.md](./CLAUDE.md) — agent and contributor workflow
 
 Quick commands:
 
@@ -74,17 +65,9 @@ make test     # full test + lint pipeline
 make format   # swiftformat + swiftlint
 ```
 
-## Heritage
+## Credit
 
-Originally based on [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace). Bugs and ideas for **that** project belong in its [GitHub Discussions](https://github.com/nikitabobko/AeroSpace/discussions). Work on this repo is tracked in [Linear](https://linear.app/qubeio/project/aerospace).
-
-Optional: keep a local `upstream` remote for selective cherry-picks (no GitHub fork link required):
-
-```bash
-git remote add upstream https://github.com/nikitabobko/AeroSpace.git  # once
-git fetch upstream
-git cherry-pick <commit-hash>
-```
+Originally by [Nikita Bobko](https://github.com/nikitabobko). See `LICENSE.txt` for copyright.
 
 ## macOS compatibility table
 
@@ -106,6 +89,7 @@ Source: [reddit](https://www.reddit.com/r/MacOS/comments/k6hiwk/keyboard_modifie
 
 ## Related projects
 
+- [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) — original project
 - [Amethyst](https://github.com/ianyh/Amethyst)
 - [yabai](https://github.com/koekeishiya/yabai)
 - [komorebi](https://github.com/LGUG2Z/komorebi) — inspiration for BSP layout

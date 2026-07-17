@@ -10,29 +10,21 @@ You can skip parts that are obvious.
 [#installation]
 == Installation
 
-[#homebrew-installation]
-=== Homebrew installation (Preferred)
-
-https://brew.sh/[Homebrew] is a package manager for macOS
+This qubeio build is installed from source (no Homebrew cask yet).
 
 [source,bash]
 ----
-brew install --cask nikitabobko/tap/aerospace
+git clone https://github.com/qubeio/AeroSpace.git
+cd AeroSpace
+./build-release.sh   # or ./build-debug.sh
 ----
 
-*(Optional)* You might need to configure your shell to enable completion provided by homebrew packages: https://docs.brew.sh/Shell-Completion
-AeroSpace provides bash, fish and zsh completions.
-
-You can also install specific previous https://github.com/nikitabobko/homebrew-tap/tree/main/Casks[pinned homebrew Casks versions]:
-[source,bash]
-----
-brew install --cask nikitabobko/tap/aerospace@0.12.0
-----
+See `dev-docs/development.md` for dependencies and codesigning.
 
 [#manual-installation]
-=== Manual installation
+=== Manual installation (release zip)
 
-. Download the latest available zip from https://github.com/nikitabobko/AeroSpace/releases[releases page]
+. Download the latest available zip from https://github.com/qubeio/AeroSpace/releases[releases page] (when published)
 . Unpack zip
 . Put unpacked `AeroSpace-v$VERSION/AeroSpace.app` to `/Applications`
 . Put unpacked `AeroSpace-v$VERSION/bin/aerospace` anywhere to `$PATH`

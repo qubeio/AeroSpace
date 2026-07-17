@@ -1,23 +1,24 @@
-name: New Issue
-description: New Issue
+name: Do not open issues here
+description: Internal project — use Linear
 body:
   - type: markdown
     attributes:
       value: |
-        AeroSpace project doesn't accept Issues directly. Please prefer GitHub Discussions. See: https://github.com/nikitabobko/AeroSpace/issues/947
+        This is an internal qubeio project. GitHub Issues are not used.
+
+        Track work in [Linear — AeroSpace](https://linear.app/qubeio/project/aerospace).
   - type: checkboxes
     id: checkbox
     attributes:
-      label: 'Sanity check'
+      label: Acknowledgement
       options:
-        - label: |
-            I read https://github.com/nikitabobko/AeroSpace/issues/947
+        - label: I understand issues opened here are not tracked
           required: true
   - type: textarea
     id: body
     attributes:
       label: Body
       value: |
-        YOUR ISSUE WILL BE IMMEDIATELY CLOSED BY BOT, DON'T OPEN NEW ISSUES DIRECTLY, USE DISCUSSIONS INSTEAD
+        DO NOT OPEN ISSUES HERE. Use Linear: https://linear.app/qubeio/project/aerospace
     validations:
       required: true

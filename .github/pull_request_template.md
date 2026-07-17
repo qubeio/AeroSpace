@@ -1,10 +1,7 @@
-## PR checklist
+## Internal note
 
-- [ ] Explain your changes in the relevant commit messages rather than in the PR description. The PR description must not contain more information than the commit messages (except for images and other media).
-- [ ] Each commit must explain what/why/how and motivation in its description. https://cbea.ms/git-commit/
-- [ ] Don't forget to link the appropriate issues/discussions in commit messages (if applicable).
-- [ ] Each commit must be an atomic change (a PR may contain several commits). Don't introduce new functional changes together with refactorings in the same commit.
-- [ ] `./run-tests.sh` exits with non-zero exit code.
-- [ ] Avoid merge commits, always rebase and force push.
+This is an internal qubeio project. Prefer Linear issues over ad-hoc PRs.
 
-Failure to follow the checklist with no apparent reasons will result in silent PR rejection.
+- [ ] Linked Linear issue (e.g. `QUB-NN`) in commit messages
+- [ ] `./run-tests.sh` passes
+- [ ] `./format.sh` if Swift changed
