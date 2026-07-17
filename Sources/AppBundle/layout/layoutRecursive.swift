@@ -29,12 +29,11 @@ extension TreeNode {
             case .window(let window):
                 if window.windowId != currentlyManipulatedWithMouseWindowId {
                     lastAppliedLayoutVirtualRect = virtual
-                    if window.isFullscreen && window == context.workspace.rootTilingContainer.mostRecentWindowRecursive {
+                    if window.isFullscreen {
                         lastAppliedLayoutPhysicalRect = nil
                         window.layoutFullscreen(context)
                     } else {
                         lastAppliedLayoutPhysicalRect = physicalRect
-                        window.isFullscreen = false
                         window.setAxFrame(point, CGSize(width: width, height: height))
                     }
                 }

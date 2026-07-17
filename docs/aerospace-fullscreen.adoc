@@ -21,7 +21,8 @@ aerospace fullscreen [-h|--help] off [--window-id <window-id>] [--fail-if-noop]
 // tag::body[]
 {manpurpose}
 
-Switching to a different tiling window within the same workspace while the current focused window is in fullscreen mode results in the fullscreen window exiting fullscreen mode.
+The fullscreen window remains fullscreen when another window is focused or opened in the same workspace.
+Entering fullscreen on another window transfers fullscreen to that window.
 
 // =========================================================== Options
 include::./util/conditional-options-header.adoc[]
