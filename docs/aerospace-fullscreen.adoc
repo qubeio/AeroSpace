@@ -21,6 +21,7 @@ aerospace fullscreen [-h|--help] off [--window-id <window-id>] [--fail-if-noop]
 // tag::body[]
 {manpurpose}
 
+Fullscreen is an overlay: it does not change the tiling container layout, and toggling it off restores the underlying tree.
 The fullscreen window remains fullscreen when another window is focused or opened in the same workspace.
 Entering fullscreen on another window transfers fullscreen to that window.
 

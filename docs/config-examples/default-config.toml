@@ -117,9 +117,10 @@ on-mode-changed = []
     # end tell'
     # '''
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#layout
-    alt-slash = 'layout tiles horizontal vertical'
-    alt-comma = 'layout accordion horizontal vertical'
+    # Keep layout tiles/accordion unbound on BSP workspaces: those commands replace
+    # the BSP layout. Fullscreen is an overlay and preserves the underlying tree.
+    # alt-slash = 'layout tiles horizontal vertical'
+    alt-comma = 'fullscreen'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#focus
     alt-h = 'focus left'
