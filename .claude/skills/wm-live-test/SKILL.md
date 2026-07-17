@@ -78,9 +78,10 @@ sleep 2
 ```
 
 Repeat with a new number only after taking the full post-spawn snapshot. Unedited files avoid save
-prompts during cleanup. The BSP split anchors to the workspace MRU window, and a newly bound window
-becomes MRU immediately. To select a specific anchor, run `aerospace focus --window-id N` before the
-spawn. Never spawn two windows without an observation between them unless testing the batch case.
+prompts during cleanup. With the default `bsp.insertion-point = 'tail'`, the BSP split anchors to the
+deepest last-child window. A newly bound window becomes MRU, but focus changes must not alter the
+insertion anchor. Never spawn two windows without an observation between them unless testing the
+batch case.
 
 ## Canned scenarios
 
@@ -108,6 +109,29 @@ This covers the QUB-61 detection-timing regression.
 
 Create two windows, close one, then immediately spawn another. The result must be side-by-side with
 no retained single-child wrapper. This covers QUB-62 normalization.
+
+### Refocus before spawn
+
+Create a spiral of four and capture its tree. Starting from the most recently spawned window, run
+`aerospace focus left` twice and capture the tree and focused window ID after each move. Spawn a
+fifth window and capture the full post-spawn snapshot.
+
+The focus changes must not alter the pre-existing tree. The fifth window must split the existing
+spiral tail, preserving the order and topology of windows 1 through 4. The final tree must remain a
+binary BSP spiral, with no flat root append. This covers the QUB-68 tail-insertion behavior when an
+earlier window is focused.
+
+### Refocus, close, and respawn
+
+Start from a fresh spiral of four. Beginning at the most recently spawned window, run
+`aerospace focus left` twice, record whichever window is now focused, and close that window. Capture
+the tree immediately after the close, then spawn a new window and capture the full post-spawn
+snapshot.
+
+After the close, normalization must preserve the surviving windows' depth-first order and leave no
+empty or single-child BSP container. The new window must split the new deepest last-child tail. The
+result must remain a binary BSP spiral with no flat root append; closing an earlier window must not
+cause the replacement window to insert at the old focus location.
 
 ### Floating anchor
 
