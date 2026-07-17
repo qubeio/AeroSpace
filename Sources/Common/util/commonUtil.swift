@@ -24,7 +24,7 @@ public func dieT<T>(
     let message =
         """
         Please report to:
-            https://github.com/nikitabobko/AeroSpace/discussions/categories/potential-bugs
+            https://linear.app/qubeio/project/aerospace
             Please describe what you did to trigger this error
 
         Message: \(_message)
