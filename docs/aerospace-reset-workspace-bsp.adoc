@@ -1,0 +1,37 @@
+= aerospace-reset-workspace-bsp(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-reset-workspace-bsp
+// tag::purpose[]
+:manpurpose: Rebuild a workspace as a valid binary BSP tree
+// end::purpose[]
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace reset-workspace-bsp [-h|--help] [--workspace <workspace>]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+Reinserts tiled windows in their existing depth-first order using BSP insertion. Floating windows are
+left unchanged. Use this command to recover a workspace whose root was previously changed to `tiles`
+or `accordion`.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--workspace <workspace>::
+include::./util/workspace-flag-desc.adoc[]
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

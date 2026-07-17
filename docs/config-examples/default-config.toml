@@ -25,8 +25,8 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # You can set 0 to disable the padding feature
 accordion-padding = 30
 
-# Possible values: tiles|accordion|bsp
-default-root-container-layout = 'tiles'
+# This build supports BSP tiling only
+default-root-container-layout = 'bsp'
 
 # Possible values: horizontal|vertical|auto
 # 'auto' means: wide monitor (anything wider than high) gets horizontal orientation,
@@ -117,9 +117,7 @@ on-mode-changed = []
     # end tell'
     # '''
 
-    # Keep layout tiles/accordion unbound on BSP workspaces: those commands replace
-    # the BSP layout. Fullscreen is an overlay and preserves the underlying tree.
-    # alt-slash = 'layout tiles horizontal vertical'
+    # This build supports BSP tiling only. Fullscreen preserves the underlying tree.
     alt-comma = 'fullscreen'
 
     # See: https://github.com/qubeio/AeroSpace/blob/main/docs/commands.adoc#focus
@@ -216,7 +214,7 @@ on-mode-changed = []
 # See: https://github.com/qubeio/AeroSpace/blob/main/docs/guide.adoc#binding-modes
 [mode.service.binding]
     esc = ['reload-config', 'mode main']
-    r = ['flatten-workspace-tree', 'mode main'] # reset layout
+    r = ['reset-workspace-bsp', 'mode main'] # rebuild the workspace as BSP
     f = ['layout floating tiling', 'mode main'] # Toggle between floating and tiling layout
     backspace = ['close-all-windows-but-current', 'mode main']
 

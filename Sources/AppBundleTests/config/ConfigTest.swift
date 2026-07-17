@@ -17,7 +17,13 @@ final class ConfigTest: XCTestCase {
         let toml = try! String(contentsOf: projectRoot.appending(component: "docs/config-examples/default-config.toml"), encoding: .utf8)
         let (config, errors) = parseConfig(toml)
         assertEquals(errors, [])
+        assertEquals(config.defaultRootContainerLayout, .bsp)
         assertEquals(config.bsp.insertionPoint, .tail)
+    }
+
+    func testRejectsNonBspDefaultRootLayout() {
+        let (_, errors) = parseConfig("default-root-container-layout = 'tiles'")
+        assertEquals(errors, ["default-root-container-layout: This build supports only the 'bsp' root layout"])
     }
 
     func testParseBspInsertionPoint() {

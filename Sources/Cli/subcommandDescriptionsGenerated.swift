@@ -31,6 +31,7 @@ let subcommandDescriptions = [
     ["  move-workspace-to-monitor", "Move workspace to monitor targeted by relative direction, by order, or by pattern."],
     ["  move", "Move the focused window in the given direction"],
     ["  reload-config", "Reload currently active config"],
+    ["  reset-workspace-bsp", "Rebuild a workspace as a valid binary BSP tree"],
     ["  resize", "Resize the focused window"],
     ["  split", "Split focused window"],
     ["  subscribe", "Subscribe to AeroSpace events and receive notifications via socket"],

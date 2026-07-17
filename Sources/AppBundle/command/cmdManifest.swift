@@ -64,6 +64,8 @@ extension CmdArgs {
                 command = MoveWorkspaceToMonitorCommand(args: self as! MoveWorkspaceToMonitorCmdArgs)
             case .reloadConfig:
                 command = ReloadConfigCommand(args: self as! ReloadConfigCmdArgs)
+            case .resetWorkspaceBsp:
+                command = ResetWorkspaceBspCommand(args: self as! ResetWorkspaceBspCmdArgs)
             case .resize:
                 command = ResizeCommand(args: self as! ResizeCmdArgs)
             case .split:

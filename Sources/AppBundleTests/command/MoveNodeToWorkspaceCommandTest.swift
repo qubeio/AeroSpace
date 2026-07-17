@@ -88,6 +88,7 @@ final class MoveNodeToWorkspaceCommandTest: XCTestCase {
     func testTilesTargetPreservesFlatAppend() async throws {
         let sourceWorkspace = Workspace.get(byName: "a")
         let targetRoot = Workspace.get(byName: "b").rootTilingContainer
+        targetRoot.layout = .tiles
         _ = TestWindow.new(id: 1, parent: sourceWorkspace.rootTilingContainer).focusWindow()
         TestWindow.new(id: 2, parent: targetRoot)
         TestWindow.new(id: 3, parent: targetRoot)

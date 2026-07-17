@@ -107,7 +107,7 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     "enable-normalization-flatten-containers": Parser(\.enableNormalizationFlattenContainers, parseBool),
     "enable-normalization-opposite-orientation-for-nested-containers": Parser(\.enableNormalizationOppositeOrientationForNestedContainers, parseBool),
 
-    "default-root-container-layout": Parser(\.defaultRootContainerLayout, parseLayout),
+    "default-root-container-layout": Parser(\.defaultRootContainerLayout, parseBspRootLayout),
     "default-root-container-orientation": Parser(\.defaultRootContainerOrientation, parseDefaultContainerOrientation),
 
     "start-at-login": Parser(\.startAtLogin, parseBool),
@@ -378,6 +378,11 @@ private func parseStartupRootContainerLayout(_ raw: Json, _ backtrace: ConfigBac
 private func parseLayout(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Layout> {
     parseString(raw, backtrace)
         .flatMap { $0.parseLayout().orFailure(.semantic(backtrace, "Can't parse layout '\($0)'")) }
+}
+
+private func parseBspRootLayout(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Layout> {
+    parseLayout(raw, backtrace)
+        .filter(.semantic(backtrace, "This build supports only the 'bsp' root layout")) { $0 == .bsp }
 }
 
 private func skipParsing<T: Sendable>(_ value: T) -> @Sendable (_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<T> {
