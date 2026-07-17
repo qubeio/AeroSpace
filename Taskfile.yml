@@ -9,8 +9,29 @@ vars:
   # Required on dev machines that don't have the "Developer ID Application" private key.
   # Find available identities: security find-identity -v -p codesigning
   CODESIGN_IDENTITY: '{{default "" .CODESIGN_IDENTITY}}'
+  # Install tasks pull from origin by default. Skip with: PULL=0
+  PULL: '{{default "true" .PULL}}'
 
 tasks:
+  pull:
+    desc: Fast-forward pull latest commits for the current branch
+    cmds:
+      - git pull --ff-only
+
+  # Internal: honor PULL=0 / PULL=false escape hatch
+  pull:maybe:
+    internal: true
+    cmds:
+      - |
+        case "{{.PULL}}" in
+          0|false|FALSE|no|NO)
+            echo "Skipping git pull (PULL={{.PULL}})"
+            ;;
+          *)
+            git pull --ff-only
+            ;;
+        esac
+
   build:
     desc: Build debug version (fast, for development)
     cmds:
@@ -22,9 +43,10 @@ tasks:
       - '{{if .CODESIGN_IDENTITY}}./build-release.sh --codesign-identity "{{.CODESIGN_IDENTITY}}"{{else}}./build-release.sh{{end}}'
 
   install:
-    desc: Install debug build locally
-    deps: [build]
+    desc: "Pull latest, then install debug build. Skip pull: PULL=0"
     cmds:
+      - task: pull:maybe
+      - task: build
       - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
         ignore_error: true
       - sleep 1
@@ -35,11 +57,12 @@ tasks:
       - echo "Installing CLI to {{.CLI_INSTALL_PATH}}"
       - sudo cp .debug/{{.CLI_NAME}} "{{.CLI_INSTALL_PATH}}"
       - echo "✅ Installed {{.APP_NAME}} and {{.CLI_NAME}}"
-    
+
   install:simple:
-    desc: Quick install - copy debug build to Applications
-    deps: [build]
+    desc: "Pull latest, then quick-install debug build. Skip pull: PULL=0"
     cmds:
+      - task: pull:maybe
+      - task: build
       - cmd: osascript -e 'quit app "{{.APP_NAME}}"'
         ignore_error: true
       - sleep 1
@@ -71,9 +94,10 @@ tasks:
       - echo "✅ Installed release version"
 
   install:release:build:
-    desc: Build and install release version
-    deps: [build:release]
+    desc: "Pull latest, then build and install release. Skip pull: PULL=0"
     cmds:
+      - task: pull:maybe
+      - task: build:release
       - task: install:release
 
   uninstall:
@@ -111,63 +135,27 @@ tasks:
     cmds:
       - rm -rf .build .build-cli .debug .release .xcode-build
 
-  sync:
-    desc: Fetch latest changes from upstream
-    cmds:
-      - git fetch upstream
-      - echo "✅ Fetched from upstream"
-      - echo "To view changes:"
-      - echo "  git log HEAD..upstream/main --oneline"
-      - echo "To merge:"
-      - echo "  task merge"
-
-  merge:
-    desc: Merge upstream changes into current branch
-    cmds:
-      - git fetch upstream
-      - git merge upstream/main
-      - echo "✅ Merged upstream/main"
-      - echo "Run 'task test' and 'task build' to verify"
-
-  sync:install:
-    desc: Sync from upstream, merge, test, and install
-    cmds:
-      - task sync
-      - task merge
-      - task test
-      - task install:simple
-      - echo "✅ Synced, merged, tested, and installed"
-
   update:
-    desc: Pull fork changes and rebuild/reinstall
+    desc: Pull latest, test, and install debug build
     cmds:
-      - git pull origin main
-      - task test
-      - task install:simple
-
-  status:
-    desc: Show divergence from upstream
-    cmds:
-      - echo "=== Upstream status ==="
-      - git fetch upstream --quiet
-      - echo "Commits ahead of upstream:"
-      - git log upstream/main..HEAD --oneline --no-decorate
-      - echo ""
-      - echo "Commits behind upstream:"
-      - git log HEAD..upstream/main --oneline --no-decorate
+      - task: pull
+      - task: test
+      - task: install:simple
+        vars:
+          PULL: "0"
 
   dev:
     desc: Full development cycle - format, test, build, install
     cmds:
-      - task format
-      - task test
-      - task install:simple
+      - task: format
+      - task: test
+      - task: install:simple
       - echo "✅ Ready for development"
 
   check:
     desc: Pre-commit checks (format, test, build)
     cmds:
-      - task format
-      - task test
-      - task build
+      - task: format
+      - task: test
+      - task: build
       - echo "✅ All checks passed"
