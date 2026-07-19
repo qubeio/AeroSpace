@@ -73,6 +73,7 @@ final class TreeNodeTest: XCTestCase {
     }
 
     func testNormalizeContainers_flattenContainers() {
+        config.defaultRootContainerLayout = .tiles
         let workspace = Workspace.get(byName: name) // Don't cache root node
         workspace.rootTilingContainer.apply {
             TilingContainer.newVTiles(parent: $0, adaptiveWeight: 1).apply {
@@ -102,6 +103,7 @@ final class TreeNodeTest: XCTestCase {
     }
 
     func testNormalizeContainers_flattenNestedSingleChildBspContainers() {
+        config.defaultRootContainerLayout = .tiles
         let workspace = Workspace.get(byName: name)
         let outer = TilingContainer(parent: workspace.rootTilingContainer, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST)
         let inner = TilingContainer(parent: outer, adaptiveWeight: 1, .v, .bsp, index: INDEX_BIND_LAST)
@@ -128,6 +130,7 @@ final class TreeNodeTest: XCTestCase {
 
     func testNormalizeContainers_bspFlattensRegardlessOfFlag_tilesRespectsFlag() {
         XCTAssertFalse(config.enableNormalizationFlattenContainers)
+        config.defaultRootContainerLayout = .tiles
         let workspace = Workspace.get(byName: name)
         workspace.rootTilingContainer.apply {
             TilingContainer(parent: $0, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST).apply {

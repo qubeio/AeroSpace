@@ -154,6 +154,13 @@ include::aerospace-reload-config.adoc[tags=synopsis]
 include::aerospace-reload-config.adoc[tags=purpose]
 include::aerospace-reload-config.adoc[tags=body]
 
+== reset-workspace-bsp
+----
+include::aerospace-reset-workspace-bsp.adoc[tags=synopsis]
+----
+include::aerospace-reset-workspace-bsp.adoc[tags=purpose]
+include::aerospace-reset-workspace-bsp.adoc[tags=body]
+
 == resize
 ----
 include::aerospace-resize.adoc[tags=synopsis]

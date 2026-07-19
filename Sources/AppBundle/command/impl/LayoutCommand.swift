@@ -12,6 +12,9 @@ struct LayoutCommand: Command {
         }
         let targetDescription = args.toggleBetween.val.first(where: { !window.matchesDescription($0) })
             ?? args.toggleBetween.val.first.orDie()
+        guard targetDescription.isSupportedInBspOnlyMode else {
+            return io.err("Layout '\(targetDescription.rawValue)' is unavailable: this build supports BSP tiling only")
+        }
         if window.matchesDescription(targetDescription) { return false }
         switch targetDescription {
             case .h_accordion:
@@ -51,6 +54,15 @@ struct LayoutCommand: Command {
                 window.bindAsFloatingWindow(to: workspace)
                 if let size = window.lastFloatingSize { window.setAxFrame(nil, size) }
                 return true
+        }
+    }
+}
+
+extension LayoutCmdArgs.LayoutDescription {
+    fileprivate var isSupportedInBspOnlyMode: Bool {
+        switch self {
+            case .bsp, .horizontal, .vertical, .tiling, .floating: true
+            case .accordion, .tiles, .h_accordion, .v_accordion, .h_tiles, .v_tiles: false
         }
     }
 }
