@@ -286,22 +286,28 @@ private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, w
     return bindingData
 }
 
-/// Determine the orientation for a BSP split at the MRU window's position.
-/// Priority: preferredSplitDirection → aspect-ratio (computed from current tree shape) vs autoSplitThreshold.
+/// BSP orientation policy for a rectangle.
+/// Priority: preferredSplitDirection → aspect-ratio vs autoSplitThreshold (degenerate → monitor shape).
 @MainActor
-private func bspSplitOrientation(anchorWindow: Window, workspace: Workspace) -> Orientation {
+func bspOrientation(for rect: Rect, workspace: Workspace) -> Orientation {
     let bsp = config.bsp
-    let rect = computeVirtualSlotRect(of: anchorWindow, workspace: workspace)
     let ratio = rect.height > 0 ? rect.width / rect.height : 0
-    let orientation: Orientation
     if let preferred = bsp.preferredSplitDirection {
-        orientation = preferred
+        return preferred
     } else if rect.width <= 0 || rect.height <= 0 {
         let monitor = workspace.workspaceMonitor
-        orientation = monitor.width >= monitor.height ? .h : .v // degenerate rect: fall back to monitor shape
+        return monitor.width >= monitor.height ? .h : .v // degenerate rect: fall back to monitor shape
     } else {
-        orientation = ratio >= bsp.autoSplitThreshold ? .h : .v
+        return ratio >= bsp.autoSplitThreshold ? .h : .v
     }
+}
+
+/// Determine the orientation for a BSP split at the MRU window's position.
+@MainActor
+private func bspSplitOrientation(anchorWindow: Window, workspace: Workspace) -> Orientation {
+    let rect = computeVirtualSlotRect(of: anchorWindow, workspace: workspace)
+    let orientation = bspOrientation(for: rect, workspace: workspace)
+    let ratio = rect.height > 0 ? rect.width / rect.height : 0
     let appName = anchorWindow.app.name ?? "<unknown>"
     let rectDescription = String(
         format: "%.2f,%.2f,%.2f,%.2f",
@@ -311,8 +317,8 @@ private func bspSplitOrientation(anchorWindow: Window, workspace: Workspace) -> 
         Double(rect.height),
     )
     let ratioDescription = String(format: "%.2f", Double(ratio))
-    let thresholdDescription = String(format: "%.2f", Double(bsp.autoSplitThreshold))
-    let preferredOverride = bsp.preferredSplitDirection != nil
+    let thresholdDescription = String(format: "%.2f", Double(config.bsp.autoSplitThreshold))
+    let preferredOverride = config.bsp.preferredSplitDirection != nil
     let decision = orientation == .h ? "h" : "v"
     bspLog.info(
         "orientation anchor=\(anchorWindow.windowId, privacy: .public) app=\(appName, privacy: .public) slot=\(rectDescription, privacy: .public) ratio=\(ratioDescription, privacy: .public) threshold=\(thresholdDescription, privacy: .public) preferred-override=\(preferredOverride, privacy: .public) decision=\(decision, privacy: .public)",

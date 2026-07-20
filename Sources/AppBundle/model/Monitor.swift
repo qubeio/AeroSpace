@@ -85,14 +85,28 @@ extension NSScreen {
     fileprivate var visibleRect: Rect { visibleFrame.monitorFrameNormalized() }
 }
 
-private let testMonitorRect = Rect(topLeftX: 0, topLeftY: 0, width: 1920, height: 1080)
-private let testMonitor = MonitorImpl(
-    monitorAppKitNsScreenScreensId: 1,
-    name: "Test Monitor",
-    rect: testMonitorRect,
-    visibleRect: testMonitorRect,
-    isMain: true,
-)
+private let defaultTestMonitorRect = Rect(topLeftX: 0, topLeftY: 0, width: 1920, height: 1080)
+
+private func makeTestMonitor(rect: Rect) -> Monitor {
+    MonitorImpl(
+        monitorAppKitNsScreenScreensId: 1,
+        name: "Test Monitor",
+        rect: rect,
+        visibleRect: rect,
+        isMain: true,
+    )
+}
+
+/// Mutable so portrait/landscape geometry can be exercised in unit tests. Reset in `setUpWorkspacesForTests`.
+nonisolated(unsafe) var testMonitor: Monitor = makeTestMonitor(rect: defaultTestMonitorRect)
+
+func resetTestMonitor() {
+    testMonitor = makeTestMonitor(rect: defaultTestMonitorRect)
+}
+
+func setTestMonitorSize(width: CGFloat, height: CGFloat) {
+    testMonitor = makeTestMonitor(rect: Rect(topLeftX: 0, topLeftY: 0, width: width, height: height))
+}
 
 var mainMonitor: Monitor {
     if isUnitTest { return testMonitor }
