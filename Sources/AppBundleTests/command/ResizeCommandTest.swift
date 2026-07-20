@@ -28,99 +28,190 @@ final class ResizeCommandTest: XCTestCase {
     // MARK: - BSP resize functional tests
 
     @MainActor
-    func testBspResizeWidthAdd() async throws {
-        // Horizontal BSP container with 3 equal-weight windows
+    func testBspResizeSmartAddUsesPixels() async throws {
         config.defaultRootContainerLayout = .bsp
-        let root = Workspace.get(byName: name).rootTilingContainer // .bsp, .h
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
         let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
         let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
-        let w3 = TestWindow.new(id: 3, parent: root, adaptiveWeight: 1)
 
-        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .add(1)))
+        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(50)))
             .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
 
         assertEquals(result.exitCode, 0)
-        assertEquals(w1.getWeight(.h), 2.0)  // 1 + 1
-        assertEquals(w2.getWeight(.h), 0.5)  // 1 - 0.5
-        assertEquals(w3.getWeight(.h), 0.5)  // 1 - 0.5
+        XCTAssertEqual(computeVirtualSlotRect(of: w1, workspace: workspace).width, 1010, accuracy: 0.001)
+        assertEquals(computeVirtualSlotRect(of: w2, workspace: workspace).width, 910)
     }
 
     @MainActor
-    func testBspResizeWidthSubtract() async throws {
+    func testBspResizeSmartSubtractUsesPixels() async throws {
         config.defaultRootContainerLayout = .bsp
-        let root = Workspace.get(byName: name).rootTilingContainer // .bsp, .h
-        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 2)
-        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 2)
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
+        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
 
-        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .subtract(1)))
+        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .subtract(50)))
             .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
 
         assertEquals(result.exitCode, 0)
-        assertEquals(w1.getWeight(.h), 1.0)  // 2 - 1
-        assertEquals(w2.getWeight(.h), 3.0)  // 2 + 1
+        assertEquals(computeVirtualSlotRect(of: w1, workspace: workspace).width, 910)
+        XCTAssertEqual(computeVirtualSlotRect(of: w2, workspace: workspace).width, 1010, accuracy: 0.001)
     }
 
     @MainActor
-    func testBspResizeHeightAdd() async throws {
-        // Vertical BSP container with 2 equal-weight windows
+    func testBspResizeVerticalUsesPixels() async throws {
         config.defaultRootContainerLayout = .bsp
         config.defaultRootContainerOrientation = .vertical
-        let root = Workspace.get(byName: name).rootTilingContainer // .bsp, .v
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
         let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
         let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
 
-        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .height, units: .add(1)))
+        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .height, units: .add(50)))
             .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
 
         assertEquals(result.exitCode, 0)
-        assertEquals(w1.getWeight(.v), 2.0)  // 1 + 1
-        assertEquals(w2.getWeight(.v), 0.0)  // 1 - 1
+        assertEquals(computeVirtualSlotRect(of: w1, workspace: workspace).height, 590)
+        assertEquals(computeVirtualSlotRect(of: w2, workspace: workspace).height, 490)
+    }
+
+    @MainActor
+    func testBspResizeThreeChildrenDistributesPixelDelta() async throws {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let w1 = TestWindow.new(id: 1, parent: root)
+        let w2 = TestWindow.new(id: 2, parent: root)
+        let w3 = TestWindow.new(id: 3, parent: root)
+
+        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .add(50)))
+            .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
+
+        assertEquals(result.exitCode, 0)
+        assertEquals(computeVirtualSlotRect(of: w1, workspace: workspace).width, 690)
+        assertEquals(computeVirtualSlotRect(of: w2, workspace: workspace).width, 615)
+        assertEquals(computeVirtualSlotRect(of: w3, workspace: workspace).width, 615)
+    }
+
+    @MainActor
+    func testBspResizeClampsAtOnePixel() async throws {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
+        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
+
+        for _ in 0 ..< 100 {
+            _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(50)))
+                .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
+        }
+
+        assertEquals(w1.getWeight(.h), 1919)
+        assertEquals(w2.getWeight(.h), 1)
+        XCTAssertGreaterThan(w1.getWeight(.h), 0)
+        XCTAssertGreaterThan(w2.getWeight(.h), 0)
+    }
+
+    @MainActor
+    func testBspResizeFocusedSecondSibling() async throws {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
+        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
+
+        _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(50)))
+            .run(.defaultEnv.copy(\.windowId, w2.windowId), .emptyStdin)
+
+        assertEquals(computeVirtualSlotRect(of: w1, workspace: workspace).width, 910)
+        XCTAssertEqual(computeVirtualSlotRect(of: w2, workspace: workspace).width, 1010, accuracy: 0.001)
+    }
+
+    @MainActor
+    func testBspResizeNestedContainerTargetsDirectSplit() async throws {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let nested = TilingContainer(parent: root, adaptiveWeight: 1, .v, .bsp, index: INDEX_BIND_LAST)
+        let outside = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
+        let w1 = TestWindow.new(id: 2, parent: nested, adaptiveWeight: 1)
+        let w2 = TestWindow.new(id: 3, parent: nested, adaptiveWeight: 1)
+
+        _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(50)))
+            .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
+
+        assertEquals(computeVirtualSlotRect(of: nested, workspace: workspace).width, 960)
+        assertEquals(computeVirtualSlotRect(of: outside, workspace: workspace).width, 960)
+        assertEquals(computeVirtualSlotRect(of: w1, workspace: workspace).height, 590)
+        assertEquals(computeVirtualSlotRect(of: w2, workspace: workspace).height, 490)
+    }
+
+    @MainActor
+    func testBspResizeRepairsInvalidWeights() async throws {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: -49)
+        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 51)
+
+        _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(50)))
+            .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
+
+        XCTAssertEqual(computeVirtualSlotRect(of: w1, workspace: workspace).width, 1010, accuracy: 0.001)
+        assertEquals(computeVirtualSlotRect(of: w2, workspace: workspace).width, 910)
+    }
+
+    func testBspResizeClampProtectsEveryMouseAffectedNode() {
+        assertEquals(
+            clampBspResizeDiff(50, growingWeights: [100, 50], shrinkingWeights: [10, 20]),
+            18,
+        )
+        assertEquals(
+            clampBspResizeDiff(-100, growingWeights: [100, 50], shrinkingWeights: [10, 20]),
+            -49,
+        )
+    }
+
+    @MainActor
+    func testBspResizeAbsoluteValueUsesPixels() async throws {
+        config.defaultRootContainerLayout = .bsp
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
+        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
+
+        _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .set(500)))
+            .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
+
+        XCTAssertEqual(computeVirtualSlotRect(of: w1, workspace: workspace).width, 500, accuracy: 0.001)
+        assertEquals(computeVirtualSlotRect(of: w2, workspace: workspace).width, 1420)
     }
 
     @MainActor
     func testBspResizeSingleChildIsNoOp() async throws {
-        // Resizing the only child in a BSP container should return false (not crash)
         config.defaultRootContainerLayout = .bsp
         let root = Workspace.get(byName: name).rootTilingContainer
         let w1 = TestWindow.new(id: 1, parent: root)
 
-        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .add(10)))
+        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .add(50)))
             .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
 
-        assertEquals(result.exitCode, 1) // div(0) returns nil → no-op, returns false → exitCode 1
-        assertEquals(w1.getWeight(.h), 1.0) // weight unchanged
+        assertEquals(result.exitCode, 1)
+        assertEquals(w1.getWeight(.h), 1)
     }
 
     @MainActor
-    func testBspResizeSmartPicksFirstCandidate() async throws {
-        // Smart resize: picks first candidate — the direct parent (BSP horizontal)
-        config.defaultRootContainerLayout = .bsp
-        let root = Workspace.get(byName: name).rootTilingContainer // .bsp, .h
-        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
-        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
+    func testTilesResizeBehaviorIsUnchanged() async throws {
+        let root = Workspace.get(byName: name).rootTilingContainer
+        root.layout = .tiles
+        let w1 = TestWindow.new(id: 1, parent: root, adaptiveWeight: 100)
+        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 100)
 
-        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(1)))
+        _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .smart, units: .add(50)))
             .run(.defaultEnv.copy(\.windowId, w1.windowId), .emptyStdin)
 
-        assertEquals(result.exitCode, 0)
-        assertEquals(w1.getWeight(.h), 2.0)  // 1 + 1
-        assertEquals(w2.getWeight(.h), 0.0)  // 1 - 1
-    }
-
-    @MainActor
-    func testBspResizeSiblingWeightsTotalUnchanged() async throws {
-        // After resize, total weight should be preserved (weight conservation)
-        config.defaultRootContainerLayout = .bsp
-        let root = Workspace.get(byName: name).rootTilingContainer // .bsp, .h
-        _ = TestWindow.new(id: 1, parent: root, adaptiveWeight: 1)
-        let w2 = TestWindow.new(id: 2, parent: root, adaptiveWeight: 1)
-        _ = TestWindow.new(id: 3, parent: root, adaptiveWeight: 1)
-        let totalBefore = root.children.reduce(0.0) { $0 + $1.getWeight(.h) }
-
-        _ = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .width, units: .add(1)))
-            .run(.defaultEnv.copy(\.windowId, w2.windowId), .emptyStdin)
-
-        let totalAfter = root.children.reduce(0.0) { $0 + $1.getWeight(.h) }
-        assertEquals(totalBefore, totalAfter)
+        assertEquals(w1.getWeight(.h), 150)
+        assertEquals(w2.getWeight(.h), 50)
     }
 }
