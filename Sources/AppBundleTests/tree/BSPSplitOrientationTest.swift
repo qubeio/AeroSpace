@@ -129,6 +129,115 @@ final class BSPSplitOrientationTest: XCTestCase {
         )
     }
 
+    /// QUB-90: closing the sibling of a vertical nested pair promotes that pair to root; landscape
+    /// workspace geometry must reorient the new root to horizontal.
+    func testNormalize_promotedVerticalPair_reorientsToHorizontalOnLandscape() {
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        root.layout = .bsp
+        let left = TestWindow.new(id: 1, parent: root)
+        let nested = TilingContainer(parent: root, adaptiveWeight: 1, .v, .bsp, index: INDEX_BIND_LAST)
+        let outlook = TestWindow.new(id: 2, parent: nested)
+        let teams = TestWindow.new(id: 3, parent: nested)
+        teams.markAsMostRecentChild()
+
+        left.unbindFromParent()
+        workspace.normalizeContainers()
+
+        assertEquals(
+            .h_tiles([.window(2), .window(3)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+        XCTAssertEqual(workspace.rootTilingContainer.orientation, .h)
+        XCTAssertEqual(workspace.rootTilingContainer.layout, .bsp)
+        XCTAssertTrue(workspace.mostRecentWindowRecursive === teams)
+        XCTAssertTrue(outlook.parent === workspace.rootTilingContainer)
+        XCTAssertTrue(teams.parent === workspace.rootTilingContainer)
+    }
+
+    /// QUB-90: same promotion on a portrait monitor keeps/produces a vertical root.
+    func testNormalize_promotedHorizontalPair_reorientsToVerticalOnPortrait() {
+        setTestMonitorSize(width: 1080, height: 1920)
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        root.layout = .bsp
+        // Force root horizontal so a nested horizontal pair is the surviving promotee.
+        root.changeOrientation(.h)
+        let top = TestWindow.new(id: 1, parent: root)
+        let nested = TilingContainer(parent: root, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST)
+        _ = TestWindow.new(id: 2, parent: nested)
+        _ = TestWindow.new(id: 3, parent: nested)
+
+        top.unbindFromParent()
+        workspace.normalizeContainers()
+
+        assertEquals(
+            .v_tiles([.window(2), .window(3)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+        XCTAssertEqual(workspace.rootTilingContainer.orientation, .v)
+    }
+
+    /// QUB-90: promotion that already matches geometry is a no-op (orientation unchanged).
+    func testNormalize_promotedHorizontalPair_noopWhenAlreadyCorrectOnLandscape() {
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        root.layout = .bsp
+        let left = TestWindow.new(id: 1, parent: root)
+        let nested = TilingContainer(parent: root, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST)
+        _ = TestWindow.new(id: 2, parent: nested)
+        _ = TestWindow.new(id: 3, parent: nested)
+
+        left.unbindFromParent()
+        workspace.normalizeContainers()
+
+        assertEquals(
+            .h_tiles([.window(2), .window(3)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+        XCTAssertEqual(workspace.rootTilingContainer.orientation, .h)
+    }
+
+    /// QUB-90: preferred-split-direction wins over workspace geometry after promotion.
+    func testNormalize_promotedPair_honorsPreferredSplitDirection() {
+        config.bsp.preferredSplitDirection = .v
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        root.layout = .bsp
+        let left = TestWindow.new(id: 1, parent: root)
+        let nested = TilingContainer(parent: root, adaptiveWeight: 1, .h, .bsp, index: INDEX_BIND_LAST)
+        _ = TestWindow.new(id: 2, parent: nested)
+        _ = TestWindow.new(id: 3, parent: nested)
+
+        left.unbindFromParent()
+        workspace.normalizeContainers()
+
+        assertEquals(
+            .v_tiles([.window(2), .window(3)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+        XCTAssertEqual(workspace.rootTilingContainer.orientation, .v)
+    }
+
+    /// QUB-90: normalize without a root promotion must not rewrite an explicit root orientation.
+    func testNormalize_withoutPromotion_doesNotReorientExplicitRoot() {
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        root.layout = .bsp
+        _ = TestWindow.new(id: 1, parent: root)
+        _ = TestWindow.new(id: 2, parent: root)
+        root.changeOrientation(.v)
+        XCTAssertEqual(root.orientation, .v)
+
+        workspace.normalizeContainers()
+
+        XCTAssertEqual(workspace.rootTilingContainer.orientation, .v)
+        assertEquals(
+            .v_tiles([.window(1), .window(2)]),
+            workspace.rootTilingContainer.layoutDescription,
+        )
+    }
+
     func testComputeVirtualSlotRect_reflectsUnequalWeights() {
         let workspace = Workspace.get(byName: name)
         let window1 = TestWindow.new(id: 1, parent: workspace.rootTilingContainer, adaptiveWeight: 3)
