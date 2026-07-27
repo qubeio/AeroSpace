@@ -127,12 +127,21 @@ private let moveOutMacosUnconventionalWindow = "moving macOS fullscreen, minimiz
     _ direction: CardinalDirection,
 ) {
     let prevRoot = workspace.rootTilingContainer
+    let newRootLayout: Layout = prevRoot.layout == .bsp ? .bsp : .tiles
     prevRoot.unbindFromParent()
-    // Force tiles layout
-    _ = TilingContainer(parent: workspace, adaptiveWeight: WEIGHT_AUTO, direction.orientation, .tiles, index: 0)
+    let newRoot = TilingContainer(
+        parent: workspace,
+        adaptiveWeight: WEIGHT_AUTO,
+        direction.orientation,
+        newRootLayout,
+        index: 0,
+    )
     check(prevRoot != workspace.rootTilingContainer)
-    prevRoot.bind(to: workspace.rootTilingContainer, adaptiveWeight: WEIGHT_AUTO, index: 0)
-    window.bind(to: workspace.rootTilingContainer, adaptiveWeight: WEIGHT_AUTO, index: direction.insertionOffset)
+    prevRoot.bind(to: newRoot, adaptiveWeight: WEIGHT_AUTO, index: 0)
+    window.bind(to: newRoot, adaptiveWeight: WEIGHT_AUTO, index: direction.insertionOffset)
+    bspLog.info(
+        "boundary-move-root workspace=\(workspace.name, privacy: .public) direction=\(direction.rawValue, privacy: .public) old-layout=\(prevRoot.layout.rawValue, privacy: .public) new-layout=\(newRoot.layout.rawValue, privacy: .public) root-children=\(newRoot.children.count, privacy: .public) nested-children=\(prevRoot.children.count, privacy: .public)",
+    )
 }
 
 @MainActor private func deepMoveIn(window: Window, into container: TilingContainer, moveDirection: CardinalDirection) -> Bool {

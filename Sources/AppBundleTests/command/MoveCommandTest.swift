@@ -106,6 +106,7 @@ final class MoveCommandTest: XCTestCase {
 
     func testCreateImplicitContainer() async throws {
         let workspace = Workspace.get(byName: name)
+        workspace.rootTilingContainer.layout = .tiles
         workspace.rootTilingContainer.apply {
             TestWindow.new(id: 1, parent: $0)
             assertEquals(TestWindow.new(id: 2, parent: $0).focusWindow(), true)
@@ -123,6 +124,23 @@ final class MoveCommandTest: XCTestCase {
             ]),
         )
         assertEquals(result.exitCode, 0)
+        XCTAssertEqual(workspace.rootTilingContainer.layout, .tiles)
+    }
+
+    func testCreateImplicitContainer_preservesBspMovingLeft() async throws {
+        try await assertBoundaryMovePreservesBsp(.left)
+    }
+
+    func testCreateImplicitContainer_preservesBspMovingRight() async throws {
+        try await assertBoundaryMovePreservesBsp(.right)
+    }
+
+    func testCreateImplicitContainer_preservesBspMovingUp() async throws {
+        try await assertBoundaryMovePreservesBsp(.up)
+    }
+
+    func testCreateImplicitContainer_preservesBspMovingDown() async throws {
+        try await assertBoundaryMovePreservesBsp(.down)
     }
 
     func testStop_onRootNode() async throws {
@@ -277,6 +295,86 @@ final class MoveCommandTest: XCTestCase {
             ]),
         )
         assertEquals(focus.windowOrNil?.windowId, 1)
+    }
+
+    private func assertBoundaryMovePreservesBsp(
+        _ direction: CardinalDirection,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+    ) async throws {
+        let workspace = Workspace.get(byName: name)
+        let root = workspace.rootTilingContainer
+        root.layout = .bsp
+        root.changeOrientation(direction.orientation)
+
+        let nested: TilingContainer
+        let movedWindow: TestWindow
+        if direction.isPositive {
+            nested = TilingContainer(
+                parent: root,
+                adaptiveWeight: 1,
+                direction.orientation.opposite,
+                .bsp,
+                index: INDEX_BIND_LAST,
+            )
+            movedWindow = TestWindow.new(id: 1, parent: root)
+        } else {
+            movedWindow = TestWindow.new(id: 1, parent: root)
+            nested = TilingContainer(
+                parent: root,
+                adaptiveWeight: 1,
+                direction.orientation.opposite,
+                .bsp,
+                index: INDEX_BIND_LAST,
+            )
+        }
+        TestWindow.new(id: 2, parent: nested)
+        TestWindow.new(id: 3, parent: nested)
+        assertEquals(movedWindow.focusWindow(), true)
+
+        let result = try await MoveCommand(args: MoveCmdArgs(rawArgs: [], direction))
+            .run(.defaultEnv, .emptyStdin)
+        workspace.normalizeContainers()
+
+        XCTAssertEqual(result.exitCode, 0, file: file, line: line)
+        XCTAssertEqual(workspace.rootTilingContainer.layout, .bsp, file: file, line: line)
+        let nestedDescription: LayoutDescription = direction.orientation == .h
+            ? .v_tiles([.window(2), .window(3)])
+            : .h_tiles([.window(2), .window(3)])
+        let expectedChildren: [LayoutDescription] = direction.isPositive
+            ? [nestedDescription, .window(1)]
+            : [.window(1), nestedDescription]
+        let expected: LayoutDescription = direction.orientation == .h
+            ? .h_tiles(expectedChildren)
+            : .v_tiles(expectedChildren)
+        XCTAssertEqual(
+            workspace.rootTilingContainer.layoutDescription,
+            expected,
+            file: file,
+            line: line,
+        )
+        assertBinaryBsp(workspace.rootTilingContainer, file: file, line: line)
+
+        let insertedWindow = TestWindow.new(id: 4, parent: workspace)
+        try await insertedWindow.relayoutWindow(on: workspace, forceTile: true)
+        workspace.normalizeContainers()
+
+        XCTAssertEqual(workspace.rootTilingContainer.layout, .bsp, file: file, line: line)
+        XCTAssertEqual(workspace.rootTilingContainer.children.count, 2, file: file, line: line)
+        XCTAssertTrue(insertedWindow.parent is TilingContainer, file: file, line: line)
+        assertBinaryBsp(workspace.rootTilingContainer, file: file, line: line)
+    }
+
+    private func assertBinaryBsp(
+        _ container: TilingContainer,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+    ) {
+        XCTAssertEqual(container.layout, .bsp, file: file, line: line)
+        XCTAssertEqual(container.children.count, 2, file: file, line: line)
+        for child in container.children.compactMap({ $0 as? TilingContainer }) {
+            assertBinaryBsp(child, file: file, line: line)
+        }
     }
 }
 
