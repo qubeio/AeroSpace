@@ -19,8 +19,8 @@ let package = Package(
     dependencies: [
         .package(path: "./ShellParserGenerated"),
         .package(url: "https://github.com/InerziaSoft/ISSoundAdditions.git", exact: "2.0.1"),
-        .package(url: "https://github.com/dduan/TOMLDecoder", exact: "0.4.4"),
-        .package(url: "https://github.com/apple/swift-collections.git", exact: "1.3.0"),
+        .package(url: "https://github.com/dduan/TOMLDecoder", exact: "0.4.5"),
+        .package(url: "https://github.com/apple/swift-collections.git", exact: "1.6.0"),
         .package(url: "https://github.com/soffes/HotKey.git", exact: "0.2.1"),
     ],
     // Targets are the basic building blocks of a package, defining a module or a test suite.
