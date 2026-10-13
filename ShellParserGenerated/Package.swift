@@ -13,7 +13,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/antlr/antlr4", exact: "4.13.1"),
+        .package(url: "https://github.com/antlr/antlr4", exact: "4.13.2"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
