@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-ruby '>= 3.0'
+ruby '4.1.0-preview1'
 
 source "https://rubygems.org"
 gem 'asciidoctor', '2.0.26'
